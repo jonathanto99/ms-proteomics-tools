@@ -234,4 +234,5 @@ start = { cmd = "positron .", env = { PYTHONPATH = ".pixi/envs/default/Lib" } }
 
 [tool.pixi.dependencies]
 pip = ">=25.3,<26"
+ty = ">=0.0.14,<0.0.15"
 
