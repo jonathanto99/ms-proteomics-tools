@@ -253,8 +253,8 @@ class PlotGenerator:
         ]
 
         for ax, (org, title, ref) in zip(axes, configs, strict=False):
-            if results[org]:
-                self.plot_ratio_comparison(ax, results[org], title, self.COLORS[org], ref)
+            if results.get(org):
+                self.plot_ratio_comparison(ax, results[org], title, self.COLORS.get(org, "#95a5a6"), ref)
             else:
                 ax.text(0.5, 0.5, f"No {org} data", transform=ax.transAxes, ha="center")
 

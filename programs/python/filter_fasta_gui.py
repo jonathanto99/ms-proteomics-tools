@@ -35,12 +35,19 @@ Architecture:
 
 import hashlib
 import re
-import tkinter as tk
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+    GUI_AVAILABLE = True
+except ImportError:
+    # GUI dependencies not available (e.g. headless server)
+    GUI_AVAILABLE = False
 
 
 @dataclass
@@ -63,7 +70,7 @@ class FastaEntry:
         """
         return self.header.lstrip(">")
 
-    @property
+    @cached_property
     def sequence(self) -> str:
         """Return joined sequence.
 
@@ -72,7 +79,7 @@ class FastaEntry:
         """
         return "".join(self.sequence_lines)
 
-    @property
+    @cached_property
     def sequence_hash(self) -> str:
         """Return MD5 hash of sequence for deduplication.
 
@@ -351,89 +358,57 @@ class NoDuplication(DeduplicationStrategy):
         return False
 
 
-class HeaderDeduplication(DeduplicationStrategy):
-    """Deduplicate by header text.
+class KeyedDeduplication(DeduplicationStrategy):
+    """Generic deduplication using a key extraction function.
 
-    Maintains a set of seen headers. First occurrence is kept,
-    subsequent entries with same header are marked as duplicates.
+    Maintains a set of keys extracted from entries. First occurrence is kept,
+    subsequent entries with the same key are marked as duplicates.
     """
 
-    def __init__(self):
-        """Initialize with empty set of seen headers."""
-        self.seen_headers: set[str] = set()
+    def __init__(self, key_func):
+        """Initialize with key extraction function.
+
+        Args:
+            key_func: Function that takes a FastaEntry and returns a key (str)
+        """
+        self.key_func = key_func
+        self.seen_keys: set[str] = set()
 
     def is_duplicate(self, entry: FastaEntry) -> bool:
-        """Check if entry's header was seen before.
+        """Check if entry's key was seen before.
 
         Args:
             entry: FASTA entry to check
 
         Returns:
-            True if header was seen before, False otherwise
-
-        Side Effect:
-            Adds header to seen_headers set on first occurrence
+            True if key was seen before, False otherwise
         """
-        header_text = entry.header_text
-        # * Check if header already seen
-        if header_text in self.seen_headers:
+        key = self.key_func(entry)
+        if key in self.seen_keys:
             return True
-        # * First occurrence - add to set and keep
-        self.seen_headers.add(header_text)
-        return False
-
-
-class SequenceDeduplication(DeduplicationStrategy):
-    """Deduplicate by sequence hash.
-
-    Uses MD5 hashing for efficient sequence comparison.
-    First occurrence is kept, subsequent entries with identical
-    sequences are marked as duplicates.
-
-    Note:
-        More memory-efficient than storing full sequences.
-        Hash collisions are extremely unlikely for typical FASTA files.
-    """
-
-    def __init__(self):
-        """Initialize with empty set of seen sequence hashes."""
-        self.seen_hashes: set[str] = set()
-
-    def is_duplicate(self, entry: FastaEntry) -> bool:
-        """Check if entry's sequence was seen before.
-
-        Args:
-            entry: FASTA entry to check
-
-        Returns:
-            True if sequence hash was seen before, False otherwise
-
-        Side Effect:
-            Adds sequence hash to seen_hashes set on first occurrence
-        """
-        seq_hash = entry.sequence_hash
-        # * Check if sequence hash already seen
-        if seq_hash in self.seen_hashes:
-            return True
-        # * First occurrence - add hash to set and keep
-        self.seen_hashes.add(seq_hash)
+        self.seen_keys.add(key)
         return False
 
 
 class FastaMerger:
     """Handles FASTA merging operations."""
 
-    DEDUP_STRATEGIES = {
-        "none": NoDuplication,
-        "header": HeaderDeduplication,
-        "sequence": SequenceDeduplication,
-    }
-
     def __init__(self, deduplicate: str = "none", add_prefix: bool = False):
-        if deduplicate not in self.DEDUP_STRATEGIES:
+        """Initialize merger with deduplication and prefix options.
+
+        Args:
+            deduplicate: 'none', 'header', or 'sequence'
+            add_prefix: Whether to add source filename to headers
+        """
+        if deduplicate == "none":
+            self.dedup_strategy = NoDuplication()
+        elif deduplicate == "header":
+            self.dedup_strategy = KeyedDeduplication(lambda e: e.header_text)
+        elif deduplicate == "sequence":
+            self.dedup_strategy = KeyedDeduplication(lambda e: e.sequence_hash)
+        else:
             raise ValueError(f"Invalid deduplication mode: {deduplicate}")
 
-        self.dedup_strategy = self.DEDUP_STRATEGIES[deduplicate]()
         self.add_prefix = add_prefix
         self.deduplicate_mode = deduplicate
 
@@ -503,444 +478,415 @@ class FastaMerger:
                 rep.write(f"{filename}: {total} entries, {written} written\n")
 
 
-class App(tk.Tk):
-    # Class constants
-    FASTA_FILETYPES = [
-        ("FASTA files", "*.fasta *.fa *.faa *.fna *.fas *.fsa"),
-        ("All files", "*.*"),
-    ]
-    PADDING = {"padx": 10, "pady": 8}
+if GUI_AVAILABLE:
+    class App(tk.Tk):
+        # Class constants
+        FASTA_FILETYPES = [
+            ("FASTA files", "*.fasta *.fa *.faa *.fna *.fas *.fsa"),
+            ("All files", "*.*"),
+        ]
+        PADDING = {"padx": 10, "pady": 8}
 
-    # Dark mode colors
-    DARK_BG = "#1e1e1e"
-    DARK_FG = "#e0e0e0"
-    DARK_ACCENT = "#3c3c3c"
-    DARK_HIGHLIGHT = "#007acc"
+        # Dark mode colors
+        DARK_BG = "#1e1e1e"
+        DARK_FG = "#e0e0e0"
+        DARK_ACCENT = "#3c3c3c"
+        DARK_HIGHLIGHT = "#007acc"
 
-    def __init__(self):
-        """Initialize the FASTA File Processor GUI application."""
-        super().__init__()
-        self.title("FASTA File Processor")
-        self.geometry("800x500")
-        self.minsize(700, 450)
+        def __init__(self):
+            """Initialize the FASTA File Processor GUI application."""
+            super().__init__()
+            self.title("FASTA File Processor")
+            self.geometry("800x500")
+            self.minsize(700, 450)
 
-        # * Apply dark mode theme
-        self._setup_dark_theme()
+            # * Apply dark mode theme
+            self._setup_dark_theme()
 
-        # * Create notebook for tabs
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
+            # * Create notebook for tabs
+            self.notebook = ttk.Notebook(self)
+            self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # * Create filter tab
-        self.filter_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.filter_frame, text="Filter FASTA")
+            # * Create filter tab
+            self.filter_frame = ttk.Frame(self.notebook)
+            self.notebook.add(self.filter_frame, text="Filter FASTA")
 
-        # * Create merge tab
-        self.merge_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.merge_frame, text="Merge FASTA Files")
+            # * Create merge tab
+            self.merge_frame = ttk.Frame(self.notebook)
+            self.notebook.add(self.merge_frame, text="Merge FASTA Files")
 
-        # * Initialize filter tab variables
-        self.input_var = tk.StringVar()
-        self.output_var = tk.StringVar()
-        self.patterns_var = tk.StringVar(value="##")  # Default pattern
-        self.regex_var = tk.BooleanVar(value=False)
-        self.case_var = tk.BooleanVar(value=False)
-        self.report_var = tk.BooleanVar(value=True)  # Generate reports by default
+            # * Initialize filter tab variables
+            self.input_var = tk.StringVar()
+            self.output_var = tk.StringVar()
+            self.patterns_var = tk.StringVar(value="##")  # Default pattern
+            self.regex_var = tk.BooleanVar(value=False)
+            self.case_var = tk.BooleanVar(value=False)
+            self.report_var = tk.BooleanVar(value=True)  # Generate reports by default
 
-        # * Initialize merge tab variables
-        self.merge_files: list[Path] = []  # List of Path objects to merge
-        self.merge_output_var = tk.StringVar()
-        self.dedupe_var = tk.StringVar(value="none")  # No deduplication by default
-        self.prefix_var = tk.BooleanVar(value=False)
-        self.merge_report_var = tk.BooleanVar(value=True)
+            # * Initialize merge tab variables
+            self.merge_files: list[Path] = []  # List of Path objects to merge
+            self.merge_output_var = tk.StringVar()
+            self.dedupe_var = tk.StringVar(value="none")  # No deduplication by default
+            self.prefix_var = tk.BooleanVar(value=False)
+            self.merge_report_var = tk.BooleanVar(value=True)
 
-        # * Build UI for both tabs
-        self._build_filter_ui()
-        self._build_merge_ui()
+            # * Build UI for both tabs
+            self._build_filter_ui()
+            self._build_merge_ui()
 
-    def _setup_dark_theme(self):
-        """Configure dark mode styling for ttk widgets."""
-        self.root = self
-        self.root.configure(bg=self.DARK_BG)
+        def _setup_dark_theme(self):
+            """Configure dark mode styling for ttk widgets."""
+            self.root = self
+            self.root.configure(bg=self.DARK_BG)
 
-        style = ttk.Style()
-        style.theme_use("clam")
+            style = ttk.Style()
+            style.theme_use("clam")
 
-        # Configure dark colors for all ttk widgets
-        style.configure(".", background=self.DARK_BG, foreground=self.DARK_FG)
-        style.configure("TFrame", background=self.DARK_BG)
-        style.configure("TLabel", background=self.DARK_BG, foreground=self.DARK_FG)
-        style.configure(
-            "TButton",
-            background=self.DARK_ACCENT,
-            foreground=self.DARK_FG,
-            borderwidth=1,
-            focuscolor=self.DARK_HIGHLIGHT,
-        )
-        style.map("TButton", background=[("active", self.DARK_HIGHLIGHT)])
-        style.configure("TNotebook", background=self.DARK_BG, borderwidth=0)
-        style.configure(
-            "TNotebook.Tab", background=self.DARK_ACCENT, foreground=self.DARK_FG, padding=[10, 5]
-        )
-        style.map(
-            "TNotebook.Tab",
-            background=[("selected", self.DARK_HIGHLIGHT)],
-            foreground=[("selected", "white")],
-        )
-        style.configure("TCheckbutton", background=self.DARK_BG, foreground=self.DARK_FG)
-        style.configure("TRadiobutton", background=self.DARK_BG, foreground=self.DARK_FG)
+            # Configure dark colors for all ttk widgets
+            style.configure(".", background=self.DARK_BG, foreground=self.DARK_FG)
+            style.configure("TFrame", background=self.DARK_BG)
+            style.configure("TLabel", background=self.DARK_BG, foreground=self.DARK_FG)
+            style.configure(
+                "TButton",
+                background=self.DARK_ACCENT,
+                foreground=self.DARK_FG,
+                borderwidth=1,
+                focuscolor=self.DARK_HIGHLIGHT,
+            )
+            style.map("TButton", background=[("active", self.DARK_HIGHLIGHT)])
+            style.configure("TNotebook", background=self.DARK_BG, borderwidth=0)
+            style.configure(
+                "TNotebook.Tab", background=self.DARK_ACCENT, foreground=self.DARK_FG, padding=[10, 5]
+            )
+            style.map(
+                "TNotebook.Tab",
+                background=[("selected", self.DARK_HIGHLIGHT)],
+                foreground=[("selected", "white")],
+            )
+            style.configure("TCheckbutton", background=self.DARK_BG, foreground=self.DARK_FG)
+            style.configure("TRadiobutton", background=self.DARK_BG, foreground=self.DARK_FG)
 
-    def _build_filter_ui(self):
-        frm = ttk.Frame(self.filter_frame)
-        frm.pack(fill="both", expand=True)
+        def _add_file_row(self, parent, label_text, text_var, browse_command=None):
+            """Helper to create a standard file selection row (Label + Entry + optional Button)."""
+            row = ttk.Frame(parent)
+            row.pack(fill="x")
+            ttk.Label(row, text=label_text).pack(side="left")
+            entry = tk.Entry(
+                row,
+                textvariable=text_var,
+                bg=self.DARK_ACCENT,
+                fg=self.DARK_FG,
+                insertbackground=self.DARK_FG,
+            )
+            entry.pack(side="left", fill="x", expand=True, padx=6)
+            if browse_command:
+                ttk.Button(row, text="Browse…", command=browse_command).pack(side="left")
+            return row
 
-        # Row 1: Input
-        row1 = ttk.Frame(frm)
-        row1.pack(fill="x")
-        ttk.Label(row1, text="Input FASTA:").pack(side="left")
-        input_entry = tk.Entry(
-            row1,
-            textvariable=self.input_var,
-            bg=self.DARK_ACCENT,
-            fg=self.DARK_FG,
-            insertbackground=self.DARK_FG,
-        )
-        input_entry.pack(side="left", fill="x", expand=True, padx=6)
-        ttk.Button(row1, text="Browse…", command=self.choose_input).pack(side="left")
+        def _build_filter_ui(self):
+            frm = ttk.Frame(self.filter_frame)
+            frm.pack(fill="both", expand=True)
 
-        # Row 2: Output
-        row2 = ttk.Frame(frm)
-        row2.pack(fill="x")
-        ttk.Label(row2, text="Output FASTA:").pack(side="left")
-        output_entry = tk.Entry(
-            row2,
-            textvariable=self.output_var,
-            bg=self.DARK_ACCENT,
-            fg=self.DARK_FG,
-            insertbackground=self.DARK_FG,
-        )
-        output_entry.pack(side="left", fill="x", expand=True, padx=6)
-        ttk.Button(row2, text="Browse…", command=self.choose_output).pack(side="left")
+            # File selection rows
+            self._add_file_row(frm, "Input FASTA:", self.input_var, self.choose_input)
+            self._add_file_row(frm, "Output FASTA:", self.output_var, self.choose_output)
+            self._add_file_row(frm, "Patterns (comma-separated):", self.patterns_var)
 
-        # Row 3: Patterns
-        row3 = ttk.Frame(frm)
-        row3.pack(fill="x")
-        ttk.Label(row3, text="Patterns (comma-separated):").pack(side="left")
-        pattern_entry = tk.Entry(
-            row3,
-            textvariable=self.patterns_var,
-            bg=self.DARK_ACCENT,
-            fg=self.DARK_FG,
-            insertbackground=self.DARK_FG,
-        )
-        pattern_entry.pack(side="left", fill="x", expand=True, padx=6)
-
-        # Row 4: Options
-        row4 = ttk.Frame(frm)
-        row4.pack(fill="x")
-        ttk.Checkbutton(row4, text="Use regular expressions", variable=self.regex_var).pack(
-            side="left"
-        )
-        ttk.Checkbutton(row4, text="Case sensitive", variable=self.case_var).pack(side="left")
-        ttk.Checkbutton(row4, text="Save removal report (.txt)", variable=self.report_var).pack(
-            side="left"
-        )
-
-        # Row 5: Actions
-        row5 = ttk.Frame(frm)
-        row5.pack(fill="x")
-        ttk.Button(row5, text="Run Filter", command=self.run_filter).pack(side="left")
-
-        # Help text
-        help_txt = (
-            "Tips:\n"
-            "• Enter one or more patterns separated by commas. Example: ##,gnl|ECOLI|ABC\n"
-            "• If 'Use regular expressions' is ON, each pattern is a regex.\n"
-            "• Only headers starting with '>' are checked; sequences are preserved as-is for kept entries.\n"
-        )
-        row6 = ttk.Frame(frm)
-        row6.pack(fill="both", expand=True)
-        ttk.Label(row6, text=help_txt, justify="left").pack(anchor="w")
-
-    def _build_merge_ui(self):
-        frm = ttk.Frame(self.merge_frame)
-        frm.pack(fill="both", expand=True)
-
-        # Row 1: File list with scrollbar
-        row1 = ttk.Frame(frm)
-        row1.pack(fill="both", expand=True)
-        ttk.Label(row1, text="Input FASTA files to merge:").pack(anchor="w")
-
-        list_frame = ttk.Frame(row1)
-        list_frame.pack(fill="both", expand=True, pady=4)
-
-        scrollbar = ttk.Scrollbar(list_frame)
-        scrollbar.pack(side="right", fill="y")
-
-        self.merge_listbox = tk.Listbox(
-            list_frame,
-            yscrollcommand=scrollbar.set,
-            height=6,
-            bg=self.DARK_ACCENT,
-            fg=self.DARK_FG,
-            selectbackground=self.DARK_HIGHLIGHT,
-            selectforeground="white",
-            borderwidth=0,
-            highlightthickness=1,
-            highlightcolor=self.DARK_HIGHLIGHT,
-        )
-        self.merge_listbox.pack(side="left", fill="both", expand=True)
-        scrollbar.config(command=self.merge_listbox.yview)
-
-        # Buttons for file list management
-        btn_frame = ttk.Frame(row1)
-        btn_frame.pack(fill="x", pady=4)
-        ttk.Button(btn_frame, text="Add Files…", command=self.add_merge_files).pack(
-            side="left", padx=2
-        )
-        ttk.Button(btn_frame, text="Remove Selected", command=self.remove_merge_file).pack(
-            side="left", padx=2
-        )
-        ttk.Button(btn_frame, text="Clear All", command=self.clear_merge_files).pack(
-            side="left", padx=2
-        )
-
-        # Row 2: Output
-        row2 = ttk.Frame(frm)
-        row2.pack(fill="x")
-        ttk.Label(row2, text="Output merged FASTA:").pack(side="left")
-        merge_output_entry = tk.Entry(
-            row2,
-            textvariable=self.merge_output_var,
-            bg=self.DARK_ACCENT,
-            fg=self.DARK_FG,
-            insertbackground=self.DARK_FG,
-        )
-        merge_output_entry.pack(side="left", fill="x", expand=True, padx=6)
-        ttk.Button(row2, text="Browse…", command=self.choose_merge_output).pack(side="left")
-
-        # Row 3: Options
-        row3 = ttk.Frame(frm)
-        row3.pack(fill="x")
-
-        ttk.Label(row3, text="Deduplication:").pack(side="left", padx=(0, 6))
-        ttk.Radiobutton(row3, text="None", variable=self.dedupe_var, value="none").pack(side="left")
-        ttk.Radiobutton(row3, text="By Header", variable=self.dedupe_var, value="header").pack(
-            side="left"
-        )
-        ttk.Radiobutton(row3, text="By Sequence", variable=self.dedupe_var, value="sequence").pack(
-            side="left"
-        )
-
-        # Row 4: More options
-        row4 = ttk.Frame(frm)
-        row4.pack(fill="x")
-        ttk.Checkbutton(row4, text="Add file prefix to headers", variable=self.prefix_var).pack(
-            side="left"
-        )
-        ttk.Checkbutton(row4, text="Save merge report (.txt)", variable=self.merge_report_var).pack(
-            side="left"
-        )
-
-        # Row 5: Actions
-        row5 = ttk.Frame(frm)
-        row5.pack(fill="x")
-        ttk.Button(row5, text="Run Merge", command=self.run_merge).pack(side="left")
-
-        # Help text
-        help_txt = (
-            "Tips:\n"
-            "• Add multiple FASTA files to merge them into one combined file.\n"
-            "• Deduplication: 'None' keeps all entries, 'By Header' removes duplicate headers,\n"
-            "  'By Sequence' removes duplicate sequences.\n"
-            "• File prefix adds source filename to each header (e.g., >[file1]original_header).\n"
-        )
-        row6 = ttk.Frame(frm)
-        row6.pack(fill="x")
-        ttk.Label(row6, text=help_txt, justify="left").pack(anchor="w")
-
-    def choose_input(self):
-        """Open file dialog to select input FASTA file.
-
-        Side Effects:
-            - Sets input_var to selected file path
-            - Auto-suggests output filename if not already set
-        """
-        path = filedialog.askopenfilename(
-            title="Choose FASTA file",
-            filetypes=self.FASTA_FILETYPES,
-        )
-        if path:
-            self.input_var.set(path)
-            # * Suggest an output filename next to input
-            in_path = Path(path)
-            suggested = in_path.with_suffix(in_path.suffix + ".filtered.fasta")
-            # * Only auto-suggest if output not already set
-            if not self.output_var.get():
-                self.output_var.set(str(suggested))
-
-    def choose_output(self):
-        path = filedialog.asksaveasfilename(
-            title="Save filtered FASTA as…",
-            defaultextension=".fasta",
-            filetypes=self.FASTA_FILETYPES,
-        )
-        if path:
-            self.output_var.set(path)
-
-    def add_merge_files(self):
-        """Open file dialog to select FASTA files for merging.
-
-        Allows multiple file selection. Prevents duplicate entries.
-        Auto-suggests output filename if not already set.
-
-        Side Effects:
-            - Adds selected files to merge_files list
-            - Updates merge_listbox display
-            - Auto-suggests merge output path on first addition
-        """
-        paths = filedialog.askopenfilenames(
-            title="Choose FASTA files to merge",
-            filetypes=self.FASTA_FILETYPES,
-        )
-        if paths:
-            for path in paths:
-                p = Path(path)
-                # * Prevent duplicate file additions
-                if p not in self.merge_files:
-                    self.merge_files.append(p)
-                    self.merge_listbox.insert(tk.END, p.name)
-
-            # * Suggest output if not set (use parent dir of first file)
-            if not self.merge_output_var.get() and self.merge_files:
-                first = self.merge_files[0]
-                suggested = first.parent / "merged_output.fasta"
-                self.merge_output_var.set(str(suggested))
-
-    def remove_merge_file(self):
-        selection = self.merge_listbox.curselection()
-        if selection:
-            idx = selection[0]
-            self.merge_listbox.delete(idx)
-            del self.merge_files[idx]
-
-    def clear_merge_files(self):
-        self.merge_listbox.delete(0, tk.END)
-        self.merge_files.clear()
-
-    def choose_merge_output(self):
-        path = filedialog.asksaveasfilename(
-            title="Save merged FASTA as…",
-            defaultextension=".fasta",
-            filetypes=self.FASTA_FILETYPES,
-        )
-        if path:
-            self.merge_output_var.set(path)
-
-    def _parse_patterns(self, patterns_str: str) -> list[str]:
-        """Parse comma-separated patterns and validate."""
-        patterns = [p.strip() for p in patterns_str.split(",") if p.strip()]
-        if not patterns:
-            raise ValueError("Please enter at least one pattern.")
-        return patterns
-
-    def run_filter(self):
-        """Execute FASTA filtering operation.
-
-        Validates inputs, creates FastaFilter instance, processes file,
-        and displays results. Optionally generates removal report.
-
-        Shows:
-            - Success dialog with statistics
-            - Error dialog if validation fails or exception occurs
-        """
-        try:
-            # * Validate and expand file paths
-            input_path = Path(self.input_var.get()).expanduser()
-            output_path = Path(self.output_var.get()).expanduser()
-
-            # ! Validate input file exists
-            if not input_path or not input_path.exists():
-                messagebox.showerror("Error", "Please choose a valid input FASTA file.")
-                return
-            # ! Validate output path is set
-            if not output_path:
-                messagebox.showerror("Error", "Please choose an output FASTA file path.")
-                return
-
-            # * Parse and validate patterns
-            patterns = self._parse_patterns(self.patterns_var.get().strip())
-
-            # * Create filter and process file
-            fasta_filter = FastaFilter(
-                patterns=patterns,
-                use_regex=self.regex_var.get(),
-                case_sensitive=self.case_var.get()
+            # Row 4: Options
+            row4 = ttk.Frame(frm)
+            row4.pack(fill="x")
+            ttk.Checkbutton(row4, text="Use regular expressions", variable=self.regex_var).pack(
+                side="left"
+            )
+            ttk.Checkbutton(row4, text="Case sensitive", variable=self.case_var).pack(side="left")
+            ttk.Checkbutton(row4, text="Save removal report (.txt)", variable=self.report_var).pack(
+                side="left"
             )
 
-            stats = fasta_filter.filter_file(input_path, output_path)
+            # Row 5: Actions
+            row5 = ttk.Frame(frm)
+            row5.pack(fill="x")
+            ttk.Button(row5, text="Run Filter", command=self.run_filter).pack(side="left")
 
-            # * Save report if requested
-            if self.report_var.get():
-                report_path = output_path.with_suffix(output_path.suffix + ".removed.txt")
-                fasta_filter.save_report(input_path, output_path, stats, report_path)
-                msg = f"Done!\nKept entries: {stats.kept}\nRemoved entries: {stats.removed}"
-                msg += f"\n\nReport saved to:\n{report_path}"
-            else:
-                msg = f"Done!\nKept entries: {stats.kept}\nRemoved entries: {stats.removed}"
+            # Help text
+            help_txt = (
+                "Tips:\n"
+                "• Enter one or more patterns separated by commas. Example: ##,gnl|ECOLI|ABC\n"
+                "• If 'Use regular expressions' is ON, each pattern is a regex.\n"
+                "• Only headers starting with '>' are checked; sequences are preserved as-is for kept entries.\n"
+            )
+            row6 = ttk.Frame(frm)
+            row6.pack(fill="both", expand=True)
+            ttk.Label(row6, text=help_txt, justify="left").pack(anchor="w")
 
-            messagebox.showinfo("FASTA Header Filter", msg)
-        except Exception as e:
-            # ! Display user-friendly error message
-            messagebox.showerror("Error", str(e))
+        def _build_merge_ui(self):
+            frm = ttk.Frame(self.merge_frame)
+            frm.pack(fill="both", expand=True)
 
-    def run_merge(self):
-        """Execute FASTA merge operation.
+            # Row 1: File list with scrollbar
+            row1 = ttk.Frame(frm)
+            row1.pack(fill="both", expand=True)
+            ttk.Label(row1, text="Input FASTA files to merge:").pack(anchor="w")
 
-        Validates inputs, creates FastaMerger instance, processes files,
-        and displays results. Optionally generates merge report.
+            list_frame = ttk.Frame(row1)
+            list_frame.pack(fill="both", expand=True, pady=4)
 
-        Shows:
-            - Success dialog with statistics
-            - Error dialog if validation fails or exception occurs
-        """
-        try:
-            # ! Validate at least one file selected
-            if not self.merge_files:
-                messagebox.showerror("Error", "Please add at least one FASTA file to merge.")
-                return
+            scrollbar = ttk.Scrollbar(list_frame)
+            scrollbar.pack(side="right", fill="y")
 
-            # * Validate and expand output path
-            output_path = Path(self.merge_output_var.get()).expanduser()
-            if not output_path:
-                messagebox.showerror("Error", "Please choose an output FASTA file path.")
-                return
+            self.merge_listbox = tk.Listbox(
+                list_frame,
+                yscrollcommand=scrollbar.set,
+                height=6,
+                bg=self.DARK_ACCENT,
+                fg=self.DARK_FG,
+                selectbackground=self.DARK_HIGHLIGHT,
+                selectforeground="white",
+                borderwidth=0,
+                highlightthickness=1,
+                highlightcolor=self.DARK_HIGHLIGHT,
+            )
+            self.merge_listbox.pack(side="left", fill="both", expand=True)
+            scrollbar.config(command=self.merge_listbox.yview)
 
-            # * Create merger and process files
-            merger = FastaMerger(
-                deduplicate=self.dedupe_var.get(),
-                add_prefix=self.prefix_var.get()
+            # Buttons for file list management
+            btn_frame = ttk.Frame(row1)
+            btn_frame.pack(fill="x", pady=4)
+            ttk.Button(btn_frame, text="Add Files…", command=self.add_merge_files).pack(
+                side="left", padx=2
+            )
+            ttk.Button(btn_frame, text="Remove Selected", command=self.remove_merge_file).pack(
+                side="left", padx=2
+            )
+            ttk.Button(btn_frame, text="Clear All", command=self.clear_merge_files).pack(
+                side="left", padx=2
             )
 
-            stats = merger.merge_files(self.merge_files, output_path)
+            # Row 2: Output
+            self._add_file_row(frm, "Output merged FASTA:", self.merge_output_var, self.choose_merge_output)
 
-            # * Save report if requested
-            if self.merge_report_var.get():
-                report_path = output_path.with_suffix(output_path.suffix + ".merge_report.txt")
-                merger.save_report(output_path, stats, report_path)
-                msg = f"Done!\nTotal entries written: {stats.written_entries}"
-                if stats.skipped_duplicates > 0:
-                    msg += f"\nDuplicate entries skipped: {stats.skipped_duplicates}"
-                msg += f"\n\nReport saved to:\n{report_path}"
-            else:
-                msg = f"Done!\nTotal entries written: {stats.written_entries}"
-                if stats.skipped_duplicates > 0:
-                    msg += f"\nDuplicate entries skipped: {stats.skipped_duplicates}"
+            # Row 3: Options
+            row3 = ttk.Frame(frm)
+            row3.pack(fill="x")
 
-            messagebox.showinfo("FASTA Merge", msg)
-        except Exception as e:
-            # ! Display user-friendly error message
-            messagebox.showerror("Error", str(e))
+            ttk.Label(row3, text="Deduplication:").pack(side="left", padx=(0, 6))
+            ttk.Radiobutton(row3, text="None", variable=self.dedupe_var, value="none").pack(side="left")
+            ttk.Radiobutton(row3, text="By Header", variable=self.dedupe_var, value="header").pack(
+                side="left"
+            )
+            ttk.Radiobutton(row3, text="By Sequence", variable=self.dedupe_var, value="sequence").pack(
+                side="left"
+            )
+
+            # Row 4: More options
+            row4 = ttk.Frame(frm)
+            row4.pack(fill="x")
+            ttk.Checkbutton(row4, text="Add file prefix to headers", variable=self.prefix_var).pack(
+                side="left"
+            )
+            ttk.Checkbutton(row4, text="Save merge report (.txt)", variable=self.merge_report_var).pack(
+                side="left"
+            )
+
+            # Row 5: Actions
+            row5 = ttk.Frame(frm)
+            row5.pack(fill="x")
+            ttk.Button(row5, text="Run Merge", command=self.run_merge).pack(side="left")
+
+            # Help text
+            help_txt = (
+                "Tips:\n"
+                "• Add multiple FASTA files to merge them into one combined file.\n"
+                "• Deduplication: 'None' keeps all entries, 'By Header' removes duplicate headers,\n"
+                "  'By Sequence' removes duplicate sequences.\n"
+                "• File prefix adds source filename to each header (e.g., >[file1]original_header).\n"
+            )
+            row6 = ttk.Frame(frm)
+            row6.pack(fill="x")
+            ttk.Label(row6, text=help_txt, justify="left").pack(anchor="w")
+
+        def choose_input(self):
+            """Open file dialog to select input FASTA file.
+
+            Side Effects:
+                - Sets input_var to selected file path
+                - Auto-suggests output filename if not already set
+            """
+            path = filedialog.askopenfilename(
+                title="Choose FASTA file",
+                filetypes=self.FASTA_FILETYPES,
+            )
+            if path:
+                self.input_var.set(path)
+                # * Suggest an output filename next to input
+                in_path = Path(path)
+                suggested = in_path.with_suffix(in_path.suffix + ".filtered.fasta")
+                # * Only auto-suggest if output not already set
+                if not self.output_var.get():
+                    self.output_var.set(str(suggested))
+
+        def choose_output(self):
+            path = filedialog.asksaveasfilename(
+                title="Save filtered FASTA as…",
+                defaultextension=".fasta",
+                filetypes=self.FASTA_FILETYPES,
+            )
+            if path:
+                self.output_var.set(path)
+
+        def add_merge_files(self):
+            """Open file dialog to select FASTA files for merging.
+
+            Allows multiple file selection. Prevents duplicate entries.
+            Auto-suggests output filename if not already set.
+
+            Side Effects:
+                - Adds selected files to merge_files list
+                - Updates merge_listbox display
+                - Auto-suggests merge output path on first addition
+            """
+            paths = filedialog.askopenfilenames(
+                title="Choose FASTA files to merge",
+                filetypes=self.FASTA_FILETYPES,
+            )
+            if paths:
+                for path in paths:
+                    p = Path(path)
+                    # * Prevent duplicate file additions
+                    if p not in self.merge_files:
+                        self.merge_files.append(p)
+                        self.merge_listbox.insert(tk.END, p.name)
+
+                # * Suggest output if not set (use parent dir of first file)
+                if not self.merge_output_var.get() and self.merge_files:
+                    first = self.merge_files[0]
+                    suggested = first.parent / "merged_output.fasta"
+                    self.merge_output_var.set(str(suggested))
+
+        def remove_merge_file(self):
+            selection = self.merge_listbox.curselection()
+            if selection:
+                idx = selection[0]
+                self.merge_listbox.delete(idx)
+                del self.merge_files[idx]
+
+        def clear_merge_files(self):
+            self.merge_listbox.delete(0, tk.END)
+            self.merge_files.clear()
+
+        def choose_merge_output(self):
+            path = filedialog.asksaveasfilename(
+                title="Save merged FASTA as…",
+                defaultextension=".fasta",
+                filetypes=self.FASTA_FILETYPES,
+            )
+            if path:
+                self.merge_output_var.set(path)
+
+        def _parse_patterns(self, patterns_str: str) -> list[str]:
+            """Parse comma-separated patterns and validate."""
+            patterns = [p.strip() for p in patterns_str.split(",") if p.strip()]
+            if not patterns:
+                raise ValueError("Please enter at least one pattern.")
+            return patterns
+
+        def run_filter(self):
+            """Execute FASTA filtering operation.
+
+            Validates inputs, creates FastaFilter instance, processes file,
+            and displays results. Optionally generates removal report.
+
+            Shows:
+                - Success dialog with statistics
+                - Error dialog if validation fails or exception occurs
+            """
+            try:
+                # * Validate and expand file paths
+                input_path = Path(self.input_var.get()).expanduser()
+                output_path = Path(self.output_var.get()).expanduser()
+
+                # ! Validate input file exists
+                if not input_path or not input_path.exists():
+                    messagebox.showerror("Error", "Please choose a valid input FASTA file.")
+                    return
+                # ! Validate output path is set
+                if not output_path:
+                    messagebox.showerror("Error", "Please choose an output FASTA file path.")
+                    return
+
+                # * Parse and validate patterns
+                patterns = self._parse_patterns(self.patterns_var.get().strip())
+
+                # * Create filter and process file
+                fasta_filter = FastaFilter(
+                    patterns=patterns,
+                    use_regex=self.regex_var.get(),
+                    case_sensitive=self.case_var.get()
+                )
+
+                stats = fasta_filter.filter_file(input_path, output_path)
+
+                # * Save report if requested
+                if self.report_var.get():
+                    report_path = output_path.with_suffix(output_path.suffix + ".removed.txt")
+                    fasta_filter.save_report(input_path, output_path, stats, report_path)
+                    msg = f"Done!\nKept entries: {stats.kept}\nRemoved entries: {stats.removed}"
+                    msg += f"\n\nReport saved to:\n{report_path}"
+                else:
+                    msg = f"Done!\nKept entries: {stats.kept}\nRemoved entries: {stats.removed}"
+
+                messagebox.showinfo("FASTA Header Filter", msg)
+            except Exception as e:
+                # ! Display user-friendly error message
+                messagebox.showerror("Error", str(e))
+
+        def run_merge(self):
+            """Execute FASTA merge operation.
+
+            Validates inputs, creates FastaMerger instance, processes files,
+            and displays results. Optionally generates merge report.
+
+            Shows:
+                - Success dialog with statistics
+                - Error dialog if validation fails or exception occurs
+            """
+            try:
+                # ! Validate at least one file selected
+                if not self.merge_files:
+                    messagebox.showerror("Error", "Please add at least one FASTA file to merge.")
+                    return
+
+                # * Validate and expand output path
+                output_path = Path(self.merge_output_var.get()).expanduser()
+                if not output_path:
+                    messagebox.showerror("Error", "Please choose an output FASTA file path.")
+                    return
+
+                # * Create merger and process files
+                merger = FastaMerger(
+                    deduplicate=self.dedupe_var.get(),
+                    add_prefix=self.prefix_var.get()
+                )
+
+                stats = merger.merge_files(self.merge_files, output_path)
+
+                # * Save report if requested
+                if self.merge_report_var.get():
+                    report_path = output_path.with_suffix(output_path.suffix + ".merge_report.txt")
+                    merger.save_report(output_path, stats, report_path)
+                    msg = f"Done!\nTotal entries written: {stats.written_entries}"
+                    if stats.skipped_duplicates > 0:
+                        msg += f"\nDuplicate entries skipped: {stats.skipped_duplicates}"
+                    msg += f"\n\nReport saved to:\n{report_path}"
+                else:
+                    msg = f"Done!\nTotal entries written: {stats.written_entries}"
+                    if stats.skipped_duplicates > 0:
+                        msg += f"\nDuplicate entries skipped: {stats.skipped_duplicates}"
+
+                messagebox.showinfo("FASTA Merge", msg)
+            except Exception as e:
+                # ! Display user-friendly error message
+                messagebox.showerror("Error", str(e))
 
 
 def main():
@@ -996,8 +942,13 @@ def main():
         print(f"Removed entries: {stats.removed}")
     else:
         # * GUI mode - launch Tkinter application
-        app = App()
-        app.mainloop()
+        if GUI_AVAILABLE:
+            app = App()
+            app.mainloop()
+        else:
+            print("Error: GUI dependencies (tkinter) not found.")
+            print("Please provide input, output, and patterns arguments to run in CLI mode.")
+            print("Usage: python filter_fasta_gui.py <input> <output> <patterns> [--regex] [--case] [--report]")
 
 
 if __name__ == "__main__":
