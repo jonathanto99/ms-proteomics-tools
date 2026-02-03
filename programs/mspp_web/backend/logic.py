@@ -67,10 +67,10 @@ class DataProcessor:
     def load_data(self, file_paths):
         """
         Load data from selected files with memory optimization.
-        
+
         Strategy:
         1. Fast scan: Peek at headers to identify target columns (.raw intensities and Protein IDs).
-        2. Selective load: Use 'usecols' to only pull required columns into RAM, significantly 
+        2. Selective load: Use 'usecols' to only pull required columns into RAM, significantly
            reducing the memory footprint for large FragPipe/MaxQuant outputs.
         3. Fallback: If selective load fails (e.g. malformed CSV), attempt a full load.
         """
@@ -122,7 +122,7 @@ class DataProcessor:
     def calculate_intensity_ratios(self, data, e25_file, e100_file, organism):
         """
         Calculate log2 intensity ratios (E25/E100) for consensus proteins.
-        
+
         Consensus proteins are those identified in BOTH files for the given organism.
         Filtering for consensus ensures the ratio is meaningful and not biased by
         missing values in one of the runs.
@@ -143,7 +143,8 @@ class DataProcessor:
             return None
 
         prot_col = next((c for c in ["Protein.Group", "Protein.Ids", "Protein.Names"] if c in e25_org.columns), None)
-        if not prot_col: return None
+        if not prot_col:
+            return None
 
         # Filter for valid, non-zero intensities before ratio calculation
         e25_v = e25_org[(e25_org[e25_col].notna()) & (e25_org[e25_col] > 0)]
@@ -151,7 +152,8 @@ class DataProcessor:
 
         # Find consensus proteins (intersection)
         common = set(e25_v[prot_col]) & set(e100_v[prot_col])
-        if not common: return None
+        if not common:
+            return None
 
         e25_c = e25_v[e25_v[prot_col].isin(common)].set_index(prot_col)
         e100_c = e100_v[e100_v[prot_col].isin(common)].set_index(prot_col)
@@ -170,7 +172,7 @@ class DataProcessor:
     def calculate_sample_comparison_data(self, data):
         """
         Pairs samples based on experimental conditions encoded in filenames.
-        
+
         Experimental Design:
         - Samples are typically named with "E25" (or "Y150") and "E100" (or "Y75").
         - "E25" vs "E100" refers to specific dilution/mixing ratios of the organisms.
@@ -183,11 +185,13 @@ class DataProcessor:
         # Separate files into the two experimental condition groups
         e25_exp, e100_exp = [], []
         for f in sample_files:
-            if re.search(r'E[-_]?25|Y[-_]?150', f.upper()): e25_exp.append(f)
-            elif re.search(r'E[-_]?100|Y[-_]?75', f.upper()): e100_exp.append(f)
+            if re.search(r'E[-_]?25|Y[-_]?150', f.upper()):
+                e25_exp.append(f)
+            elif re.search(r'E[-_]?100|Y[-_]?75', f.upper()):
+                e100_exp.append(f)
 
         strict_pairs_dict, singlets = {}, []
-        
+
         def get_suffix(name):
             """Extracts the unique identifier/suffix after the condition (e.g., E25_Rep1 -> Rep1)."""
             m = re.search(r'(?:E[-_]?(?:25|100)|Y[-_]?(?:150|75))[-_](.*)', name, re.IGNORECASE)
@@ -197,24 +201,32 @@ class DataProcessor:
         for s in e25_exp:
             suff = get_suffix(s)
             if suff:
-                if suff not in strict_pairs_dict: strict_pairs_dict[suff] = {}
-                if 'E25' in strict_pairs_dict[suff]: singlets.append(s)
-                else: strict_pairs_dict[suff]['E25'] = s
-            else: singlets.append(s)
+                if suff not in strict_pairs_dict:
+                    strict_pairs_dict[suff] = {}
+                if 'E25' in strict_pairs_dict[suff]:
+                    singlets.append(s)
+                else:
+                    strict_pairs_dict[suff]['E25'] = s
+            else:
+                singlets.append(s)
 
         for s in e100_exp:
             suff = get_suffix(s)
             if suff:
-                if suff not in strict_pairs_dict: strict_pairs_dict[suff] = {}
-                if 'E100' in strict_pairs_dict[suff]: singlets.append(s)
-                else: strict_pairs_dict[suff]['E100'] = s
-            else: singlets.append(s)
+                if suff not in strict_pairs_dict:
+                    strict_pairs_dict[suff] = {}
+                if 'E100' in strict_pairs_dict[suff]:
+                    singlets.append(s)
+                else:
+                    strict_pairs_dict[suff]['E100'] = s
+            else:
+                singlets.append(s)
 
         strict_pairs = []
-        for suff, p in strict_pairs_dict.items():
-            if 'E25' in p and 'E100' in p: 
+        for suff, p in strict_pairs_dict.items():  # noqa: B007
+            if 'E25' in p and 'E100' in p:
                 strict_pairs.append((p['E25'], p['E100']))
-            else: 
+            else:
                 singlets.extend(p.values())
 
         if strict_pairs:
@@ -246,7 +258,7 @@ class DataProcessor:
 
 class PlotGenerator:
     """Handles matplotlib visualization logic for bar charts and boxplots."""
-    
+
     # Colors associated with each organism for consistent branding across plots
     COLORS = {"HeLa": "#9b59b6", "E.coli": "#e67e22", "Yeast": "#16a085"}
 
@@ -265,7 +277,7 @@ class PlotGenerator:
 
         sorted_samples = sorted(counts.index, key=get_sort_val)
         counts = counts.reindex(sorted_samples)
-        
+
         fig, ax = plt.subplots(figsize=figsize)
         bottom = np.zeros(len(counts))
 
@@ -280,7 +292,7 @@ class PlotGenerator:
             for org in self.processor.ORGANISMS:
                 val = counts.loc[sample, org]
                 if val > 0:
-                    ax.text(i, y_off + val/2, str(int(val)), ha='center', va='center', 
+                    ax.text(i, y_off + val/2, str(int(val)), ha='center', va='center',
                             fontsize=9, fontweight='bold', color='white')
                     y_off += val
 
@@ -300,7 +312,7 @@ class PlotGenerator:
         """
         results = self.processor.calculate_sample_comparison_data(data)
         fig, axes = plt.subplots(3, 1, figsize=figsize)
-        
+
         # Configuration for each organism: (Organism Name, Title, Expected Ratio Line)
         configs = [
             ('HeLa', "HeLa Log2 Ratio (Expected: 0)", 0),
