@@ -6,3 +6,4 @@ pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
 # Categorize Jupyter notebooks specifically as documentation
 *.ipynb linguist-documentation=true
+*.ipynb linguist-detectable=false
