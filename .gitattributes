@@ -2,8 +2,6 @@
 * text=auto
 # Pixi SCM syntax highlighting & preventing 3-way merges
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
-# SCM syntax highlighting & preventing 3-way merges
-pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
 # Categorize Jupyter notebooks specifically as documentation
 *.ipynb linguist-documentation=true
 *.ipynb linguist-detectable=false
