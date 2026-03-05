@@ -96,17 +96,21 @@ def serve_react_app():
 @app.route('/<path:path>')
 def serve_static_files(path):
     """Serves static files (JS, CSS, images, etc.) from the dist folder."""
+    # Normalize path for Windows: replace forward slashes with OS-specific separator
+    normalized_path = os.path.normpath(path)
+    full_path = Path(app.static_folder) / normalized_path
+    
+    logger.debug(f"Attempting to serve asset: {path} -> Resolved to: {full_path}")
+
     # Try to serve the file if it exists
-    full_path = Path(app.static_folder) / path
     if full_path.exists() and full_path.is_file():
-        # Log asset serving to help debug grey screen
         mime_type, _ = mimetypes.guess_type(str(full_path))
         logger.info(f"Serving asset: {path} (MIME: {mime_type})")
-        return send_from_directory(app.static_folder, path)
+        return send_from_directory(app.static_folder, normalized_path)
     
     # If file doesn't exist and it's not an API route, serve index.html for React Router
     if not path.startswith('api/'):
-        logger.info(f"Path not found, falling back to index.html: {path}")
+        logger.info(f"Asset not found, falling back to index.html: {path} (Looked in: {full_path})")
         return send_from_directory(app.static_folder, 'index.html')
     
     # 404 for missing API routes
