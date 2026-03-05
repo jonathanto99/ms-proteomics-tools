@@ -4,6 +4,7 @@ MSPP Data Plotter - Simple Desktop Launcher
 Opens the app in your default browser - no extra dependencies needed!
 """
 
+import os
 import sys
 import threading
 import time
@@ -18,9 +19,11 @@ sys.path.insert(0, str(backend_path))
 
 
 def start_flask():
-    """Start Flask server in background thread."""
-    # Port 5000 is often blocked/used on Windows. Using 8050 is safer.
-    app.run(port=8050, debug=False, use_reloader=False, threaded=True)
+    """Start Flask server in background thread using configured port."""
+    port = int(os.getenv('FLASK_PORT', '5000'))
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    # Desktop launcher: disable debug mode and reloader for stability
+    app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
 
 
 if __name__ == '__main__':
@@ -29,6 +32,9 @@ if __name__ == '__main__':
     print("=" * 60)
 
     # Start Flask in background
+    port = int(os.getenv('FLASK_PORT', '5000'))
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    
     print("\n⏳ Starting backend server...")
     flask_thread = threading.Thread(target=start_flask, daemon=True)
     flask_thread.start()
@@ -36,7 +42,8 @@ if __name__ == '__main__':
     # Wait for Flask to start
     time.sleep(2)
 
-    print("✅ Backend ready on http://127.0.0.1:8050")
+    url = f"http://{host}:{port}"
+    print(f"✅ Backend ready on {url}")
     print("🎨 Opening application in your default browser...\n")
 
     # Open in default browser only

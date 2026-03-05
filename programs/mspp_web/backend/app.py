@@ -26,12 +26,31 @@ from werkzeug.utils import secure_filename
 # Import our custom logic for data processing and visualization
 from .logic import DataProcessor, PlotGenerator, fig_to_base64
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Force correct MIME types to ensure Vite/React assets load correctly in all environments
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('text/css', '.css')
 
-app = Flask(__name__, static_folder='../frontend/dist', static_url_path='')
-CORS(app)
+# Cross-platform path handling: use Path() for proper OS-specific path resolution
+BACKEND_DIR = Path(__file__).parent
+STATIC_FOLDER = str(BACKEND_DIR.parent / 'frontend' / 'dist')
+TEMP_DIR = Path(os.getenv('MSPP_TEMP_DIR', tempfile.gettempdir()))
+
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='')
+
+# Configure CORS with environment-based origins for flexibility
+cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5000').split(',')
+cors_config = {
+    'origins': [origin.strip() for origin in cors_origins],
+    'supports_credentials': True
+}
+CORS(app, resources={r'/api/*': cors_config})
 
 # Global instances shared across the session
 # Note: In a multi-user production environment, these should be session-scoped or stateless.
@@ -78,10 +97,13 @@ def upload_files():
         if file and file.filename and file.filename.lower().endswith(('.tsv', '.txt')):
             # SECURITY: Use secure_filename to prevent directory traversal attacks
             safe_name = secure_filename(file.filename)
-            temp_path = Path(tempfile.gettempdir()) / safe_name
+            # Use cross-platform TEMP_DIR variable instead of hardcoded path
+            temp_path = TEMP_DIR / safe_name
+            temp_path.parent.mkdir(parents=True, exist_ok=True)
             file.save(temp_path)
             uploaded_files[safe_name] = str(temp_path)
             temp_paths.append(safe_name)
+            logger.info(f"File uploaded: {safe_name} to {temp_path}")
 
     return jsonify({
         'message': f'{len(temp_paths)} files uploaded successfully',
@@ -162,6 +184,10 @@ def export_plot(chart_type):
         return jsonify({'error': 'Export failed due to an internal error.'}), 500
 
 if __name__ == "__main__":
-    # For development runs: enable debug mode only if explicitly set via environment variable
-    debug_mode = bool(int(os.getenv("FLASK_DEBUG", "0")))
-    app.run(port=8050, debug=debug_mode)
+    # Cross-platform configuration via environment variables
+    port = int(os.getenv('FLASK_PORT', '5000'))
+    host = os.getenv('FLASK_HOST', '127.0.0.1')
+    debug_mode = os.getenv('FLASK_ENV', 'production').lower() in ('development', 'debug')
+    
+    logger.info(f"Starting Flask server on {host}:{port} (debug={debug_mode})")
+    app.run(host=host, port=port, debug=debug_mode)

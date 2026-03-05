@@ -39,6 +39,83 @@ cd programs/mspp_web/frontend
 npm install
 ```
 
+## Launch the App
+
+### Quick Start (Easiest Method)
+
+After setup, launch the web app using one of these methods:
+
+**Windows:**
+- **Development:** Double-click `Launch_MSPP_App.bat`
+- **Production:** Double-click `Launch_MSPP_App_Prod.bat`
+
+**macOS/Linux:**
+```bash
+# Development mode (with debugging)
+chmod +x Launch_MSPP_App.sh
+./Launch_MSPP_App.sh
+
+# Production mode (optimized)
+./Launch_MSPP_App_Prod.sh
+```
+
+**Any Platform (Python):**
+```bash
+# Development mode (default)
+python launcher.py
+
+# Production mode
+python launcher.py --prod
+```
+
+The launchers automatically find your Python environment and open the app at `http://localhost:5000`.
+
+### Manual Launch
+
+If you prefer to run the app manually:
+
+```bash
+# Activate environment first
+source .venv/bin/activate  # macOS/Linux
+# or
+.\.venv\Scripts\Activate.ps1  # Windows PowerShell
+
+# Run the Flask backend
+flask --app programs.mspp_web.backend.app run
+
+# In another terminal, run the frontend dev server (optional)
+cd programs/mspp_web/frontend
+npm run dev
+```
+
+## Platform Support
+
+This project is **fully cross-platform** and works on Windows, macOS, and Linux.
+
+**Cross-Platform Features:**
+- ✅ Multiple setup scripts: PowerShell (Windows), Bash (macOS/Linux), and Python (all platforms)
+- ✅ Desktop launchers: .bat (Windows), .sh (macOS/Linux), and Python (all platforms)
+- ✅ Path handling: Uses `pathlib.Path` for automatic platform-specific path resolution
+- ✅ Line endings: Normalized via `.gitattributes` for consistent development across OS
+- ✅ Environment variables: Configure ports, CORS origins, and temp directories
+- ✅ Provisional: All dependencies tested on Python 3.10, 3.11, 3.12, 3.13, 3.14
+
+**Configuration:**
+Set environment variables to customize behavior (all optional):
+```bash
+# Backend
+FLASK_HOST=127.0.0.1           # Default: localhost
+FLASK_PORT=5000                # Default: 5000
+FLASK_ENV=development          # Enable debug mode
+CORS_ORIGINS=http://localhost:3000,http://localhost:5000
+
+# Frontend
+VITE_PORT=3000                 # Default: 3000
+VITE_API_PROXY=http://localhost:5000  # API proxy target
+```
+
+See [.env.example](.env.example) for all options and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup.
+
 ## Tools
 
 ### MSPP Data Plotter (Web App)

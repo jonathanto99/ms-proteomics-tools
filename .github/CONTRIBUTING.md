@@ -66,6 +66,48 @@ Thank you for your interest in contributing to our mass spectrometry analysis to
 
 ## Development Workflow
 
+### Quick App Launch
+
+The easiest way to run the web app locally - just double-click the appropriate launcher script:
+
+**Windows (Development):**
+- Double-click: `Launch_MSPP_App.bat`
+- Sets `FLASK_ENV=development` for debugging
+
+**Windows (Production):**
+- Double-click: `Launch_MSPP_App_Prod.bat`
+- Sets `FLASK_ENV=production` for optimized performance
+
+**macOS/Linux (Development):**
+```bash
+chmod +x Launch_MSPP_App.sh
+./Launch_MSPP_App.sh
+```
+
+**macOS/Linux (Production):**
+```bash
+chmod +x Launch_MSPP_App_Prod.sh
+./Launch_MSPP_App_Prod.sh
+```
+
+**Cross-Platform Python Launcher (Any OS):**
+```bash
+# Development mode (default, with debugging)
+python launcher.py
+
+# Production mode (optimized, no debugging)
+python launcher.py --prod
+
+# Show help
+python launcher.py --help
+```
+
+The launchers automatically:
+- Find your Python environment (.venv, pixi, or system)
+- Set appropriate environment variables
+- Open the app in your default browser
+- Handle errors gracefully
+
 ### Code Style
 
 - **Python**: Follow PEP 8 guidelines
@@ -129,6 +171,53 @@ ruff check --fix programs/
 # Run tests
 pytest tests/
 ```
+
+## Configuration
+
+### Environment Variables
+
+The application supports environment variables for flexible cross-platform configuration:
+
+**Backend (Flask API):**
+```bash
+# Host and port
+FLASK_HOST=127.0.0.1          # Default: 127.0.0.1
+FLASK_PORT=5000               # Default: 5000
+FLASK_ENV=development         # development|production (enables debug mode)
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,http://localhost:5000  # Comma-separated
+
+# Temporary directory for uploads
+MSPP_TEMP_DIR=/custom/temp/path  # Default: system temp directory
+```
+
+**Frontend (Vite Dev Server):**
+```bash
+# Development server
+VITE_PORT=3000                    # Default: 3000
+VITE_API_PROXY=http://localhost:5000  # Default: http://localhost:5000
+```
+
+**Example Development Setup:**
+```bash
+# macOS/Linux
+export FLASK_ENV=development
+export FLASK_PORT=5000
+export VITE_PORT=3000
+
+# Windows (PowerShell)
+$env:FLASK_ENV='development'
+$env:FLASK_PORT='5000'
+$env:VITE_PORT='3000'
+
+# Windows (Command Prompt)
+set FLASK_ENV=development
+set FLASK_PORT=5000
+set VITE_PORT=3000
+```
+
+See [.env.example](.env.example) for all available options.
 
 ### Docstrings
 

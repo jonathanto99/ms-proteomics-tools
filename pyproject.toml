@@ -100,7 +100,7 @@ Documentation = "https://github.com/MSCoreLab/BYU-Core-MS-Lab#readme"
 [project.scripts]
 # Command-line entry points
 mspp-web = "programs.mspp_web.launch_app:main"
-filter-fasta = "programs.pyscripts.filter_fasta_gui:main"
+filter-fasta = "programs.python.filter_fasta_gui:main"
 
 [tool.setuptools]
 # Package discovery
