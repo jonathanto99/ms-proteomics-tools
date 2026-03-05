@@ -11,28 +11,54 @@ Thank you for your interest in contributing to our mass spectrometry analysis to
 
 ### Setup Development Environment
 
+**Quick Setup (Recommended):** Use one of the automated setup scripts:
+
+- **Windows (PowerShell):**
+  ```powershell
+  .\scripts\setup_dev.ps1
+  ```
+
+- **macOS/Linux (Bash):**
+  ```bash
+  chmod +x ./scripts/setup_dev.sh
+  ./scripts/setup_dev.sh
+  ```
+
+- **All Platforms (Python):**
+  ```bash
+  python scripts/setup_dev.py
+  ```
+
+**Manual Setup:** If you prefer to set up manually:
+
 1. **Clone the repository**
-   ```powershell
+   ```bash
    git clone https://github.com/BYU-MS-Core-Lab/BYU-MS-Core-Automative-Proteomics-Tools.git
-   cd BYU-Core-MS-Lab
+   cd BYU-MS-Core-Automative-Proteomics-Tools
    ```
 
 2. **Create virtual environment**
-   ```powershell
+   ```bash
    python -m venv .venv
-   .\.venv\Scripts\Activate.ps1  # Windows PowerShell
-   # or
-   source .venv/bin/activate      # macOS/Linux
+   
+   # Windows (PowerShell)
+   .\.venv\Scripts\Activate.ps1
+   
+   # Windows (Command Prompt)
+   .venv\Scripts\activate.bat
+   
+   # macOS/Linux
+   source .venv/bin/activate
    ```
 
 3. **Install dependencies**
-   ```powershell
+   ```bash
    # Install with development tools
    pip install -e ".[dev]"
    ```
 
 4. **For web app development**
-   ```powershell
+   ```bash
    cd programs/mspp_web/frontend
    npm install
    cd ../../..
@@ -53,26 +79,36 @@ Thank you for your interest in contributing to our mass spectrometry analysis to
 
 ### Common Commands
 
-**Daily Development:**
-```powershell
-# Activate environment
+**Environment Activation:**
+```bash
+# Windows (PowerShell)
 .\.venv\Scripts\Activate.ps1
 
-# Run web app
-python programs/mspp_web/launch_app.py
+# Windows (Command Prompt)
+.venv\Scripts\activate.bat
 
-# Run Python tools (filter FASTA, data analysis, etc.)
-python programs/python/filter_fasta_gui.py
+# macOS/Linux
+source .venv/bin/activate
+```
+
+**Daily Development:**
+```bash
+# Run web app backend
+python programs/mspp_web/backend/app.py
+
+# Run web app frontend (in separate terminal)
+cd programs/mspp_web/frontend
+npm run dev
 
 # Run Jupyter notebook for data analysis
 jupyter notebook programs/python/MSPP_data_analysis.ipynb
 
-# Deactivate when done
+# Deactivate environment when done
 deactivate
 ```
 
 **Frontend Development (Web App):**
-```powershell
+```bash
 cd programs/mspp_web/frontend
 
 # Development mode (hot reload)
@@ -83,7 +119,7 @@ npm run build
 ```
 
 **Code Quality:**
-```powershell
+```bash
 # Format code with Ruff
 ruff format programs/
 

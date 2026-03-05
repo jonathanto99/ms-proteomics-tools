@@ -12,8 +12,9 @@ $pythonVersion = python --version 2>&1
 if ($pythonVersion -match "Python 3\.1[0-4]") {
     Write-Host "✅ $pythonVersion detected" -ForegroundColor Green
 } else {
-    Write-Host "❌ Python 3.10+ required. Found: $pythonVersion" -ForegroundColor Red
-    exit 1
+    Write-Host "⚠️  Python 3.10+ recommended. Found: $pythonVersion" -ForegroundColor Yellow
+    Write-Host "   Continue anyway? (Ctrl+C to cancel, Enter to continue)" -ForegroundColor Yellow
+    Read-Host
 }
 
 # Create virtual environment
@@ -36,10 +37,10 @@ Write-Host ""
 Write-Host "⬆️  Upgrading pip..." -ForegroundColor Yellow
 python -m pip install --upgrade pip --quiet
 
-# Install Python dependencies
+# Install Python dependencies (including dev tools)
 Write-Host ""
 Write-Host "📥 Installing Python dependencies..." -ForegroundColor Yellow
-pip install -e . --quiet
+pip install -e ".[dev]" --quiet
 Write-Host "✅ Python dependencies installed" -ForegroundColor Green
 
 # Check if Node.js is installed
@@ -69,8 +70,9 @@ Write-Host "=================================================" -ForegroundColor 
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "  1. Activate environment: .\.venv\Scripts\Activate.ps1" -ForegroundColor White
-Write-Host "  2. Run desktop app: python programs\pyscripts\MSPP_data_plotter.py" -ForegroundColor White
-Write-Host "  3. Run web app: python programs\mspp_web\launch_app.py" -ForegroundColor White
+Write-Host "  2. Run data analysis: python programs\python\MSPP_data_analysis.ipynb" -ForegroundColor White
+Write-Host "  3. Run web app: python programs\mspp_web\backend\app.py" -ForegroundColor White
+Write-Host "     (in another terminal: cd programs\mspp_web\frontend && npm run dev)" -ForegroundColor White
 Write-Host ""
 Write-Host "See CONTRIBUTING.md for development guidelines" -ForegroundColor Cyan
 Write-Host ""
