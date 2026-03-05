@@ -90,40 +90,41 @@ def serve_static(path):
         return jsonify({'error': 'Forbidden'}), 403
 
     # Logic to handle potential visibility issues with .js files on corporate PCs
-    # We use multiple checks: normal file check, bypass (.txt) check, and direct read
-    if os.path.isfile(full_path):
+    exists = os.path.isfile(full_path)
+    
+    if not exists:
+        # Corporate Security Bypass: Check for masked file extension (.js.txt)
+        # This addresses cases where corporate EDR blocks Python from 'seeing' .js files
+        if path.endswith(('.js', '.js.map')):
+            for suffix in ['.txt', '.txt.txt']:
+                bypass_full_path = full_path + suffix
+                if os.path.isfile(bypass_full_path):
+                    mime_type = 'application/javascript' if path.endswith('.js') else 'application/json'
+                    logger.info(f"SECURITY BYPASS: Serving {path} from masked file {os.path.basename(bypass_full_path)} (MIME: {mime_type})")
+                    return send_file(bypass_full_path, mimetype=mime_type)
+
+        # Diagnostic: List files in the parent directory if still not found
+        parent_dir = os.path.dirname(full_path)
+        logger.warning(f"File not found: {path}. Checking directory visibility: {parent_dir}")
+        if os.path.isdir(parent_dir):
+            try:
+                files_in_dir = os.listdir(parent_dir)
+                logger.info(f"Files visible in {os.path.basename(parent_dir)}: {files_in_dir}")
+                
+                # Fuzzy matching: try to find the file case-insensitively
+                requested_name = os.path.basename(full_path).lower()
+                for f in files_in_dir:
+                    if f.lower() == requested_name:
+                        logger.info(f"Fuzzy match found: {f}. Serving this instead.")
+                        return send_from_directory(parent_dir, f)
+            except Exception as e:
+                logger.error(f"Could not list directory: {e}")
+        
+    if exists:
         mime_type, _ = mimetypes.guess_type(full_path)
         logger.info(f"Serving file: {path} (MIME: {mime_type})")
         return send_from_directory(STATIC_FOLDER, path)
 
-    # Corporate Security Bypass: Check for masked file extension (.js.txt)
-    # This addresses cases where corporate EDR blocks Python from 'seeing' .js files
-    if path.endswith(('.js', '.js.map')):
-        # Try both .txt and .txt.txt suffix due to double-rename safety
-        for suffix in ['.txt', '.txt.txt']:
-            bypass_full_path = full_path + suffix
-            if os.path.isfile(bypass_full_path):
-                mime_type = 'application/javascript' if path.endswith('.js') else 'application/json'
-                logger.info(f"SECURITY BYPASS: Serving {path} from masked file {os.path.basename(bypass_full_path)} (MIME: {mime_type})")
-                return send_file(bypass_full_path, mimetype=mime_type)
-
-    # Diagnostic: List files in the parent directory if still not found
-    parent_dir = os.path.dirname(full_path)
-    logger.warning(f"File not found: {path}. Checking directory visibility: {parent_dir}")
-    if os.path.isdir(parent_dir):
-        try:
-            files_in_dir = os.listdir(parent_dir)
-            logger.info(f"Files visible in {os.path.basename(parent_dir)}: {files_in_dir}")
-            
-            # Fuzzy matching: try to find the file case-insensitively
-            requested_name = os.path.basename(full_path).lower()
-            for f in files_in_dir:
-                if f.lower() == requested_name:
-                    logger.info(f"Fuzzy match found: {f}. Serving this instead.")
-                    return send_from_directory(parent_dir, f)
-        except Exception as e:
-            logger.error(f"Could not list directory: {e}")
-        
     # Prevent MIME type errors by not falling back to index.html for assets
     ext = os.path.splitext(path)[1].lower()
     if ext in ('.js', '.css', '.png', '.jpg', '.svg', '.ico', '.map'):
@@ -141,98 +142,6 @@ def serve_static(path):
 def health_check():
     """Simple health check endpoint."""
     return jsonify({'status': 'ok'})
-
-@app.route('/api/upload', methods=['POST'])
-def upload_files():
-    """Handles multi-file TSV/TXT uploads."""
-    if 'files' not in request.files:
-        return jsonify({'error': 'No files provided'}), 400
-
-    files = request.files.getlist('files')
-    temp_paths = []
-
-    for file in files:
-        if file and file.filename and file.filename.lower().endswith(('.tsv', '.txt')):
-            safe_name = secure_filename(file.filename)
-            temp_path = os.path.join(TEMP_DIR, safe_name)
-            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
-            file.save(temp_path)
-            uploaded_files[safe_name] = temp_path
-            temp_paths.append(safe_name)
-            logger.info(f"File uploaded: {safe_name} to {temp_path}")
-
-    return jsonify({
-        'message': f'{len(temp_paths)} files uploaded successfully',
-        'files': temp_paths
-    })
-
-@app.route('/api/files', methods=['GET', 'DELETE'])
-def manage_files():
-    """Manage uploaded files."""
-    if request.method == 'DELETE':
-        for path in uploaded_files.values():
-            with contextlib.suppress(Exception):
-                if os.path.exists(path):
-                    os.remove(path)
-        uploaded_files.clear()
-        if hasattr(processor, 'cached_data'):
-            processor.cached_data = None
-            processor.cached_file_list = []
-        return jsonify({'message': 'Cleared all files and cache'})
-    return jsonify({'files': list(uploaded_files.keys())})
-
-@app.route('/api/plot/<chart_type>', methods=['POST'])
-def generate_plot(chart_type):
-    """Generates a visualization."""
-    if not uploaded_files:
-        return jsonify({'error': 'No files uploaded'}), 400
-
-    try:
-        data = processor.load_data(list(uploaded_files.values()))
-        if chart_type == 'bar-chart':
-            fig = plotter.create_bar_chart_figure(data)
-        elif chart_type == 'sample-comparison':
-            fig = plotter.create_comparison_figure(data)
-        else:
-            return jsonify({'error': 'Invalid plot type'}), 400
-
-        return jsonify({'image': fig_to_base64(fig)})
-    except Exception as e:
-        logging.exception(f"Plot generation failed: {e}")
-        return jsonify({'error': 'Plot generation failed due to an internal error.'}), 500
-
-@app.route('/api/export/<chart_type>', methods=['POST'])
-def export_plot(chart_type):
-    """Exports a plot to PNG."""
-    if not uploaded_files:
-        return jsonify({'error': 'No files uploaded'}), 400
-
-    try:
-        data = processor.load_data(list(uploaded_files.values()))
-        if chart_type == 'bar-chart':
-            fig = plotter.create_bar_chart_figure(data, figsize=(10, 6))
-            name = 'protein_id_bar_chart.png'
-        elif chart_type == 'sample-comparison':
-            fig = plotter.create_comparison_figure(data, figsize=(18, 16))
-            name = 'intensity_ratio_comparison.png'
-        else:
-            return jsonify({'error': 'Invalid plot type'}), 400
-
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-        buf.seek(0)
-        return send_file(buf, mimetype='image/png', as_attachment=True, download_name=name)
-    except Exception as e:
-        logging.exception(f"Export failed: {e}")
-        return jsonify({'error': 'Export failed due to an internal error.'}), 500
-
-if __name__ == "__main__":
-    port = int(os.getenv('FLASK_PORT', '5000'))
-    host = os.getenv('FLASK_HOST', '127.0.0.1')
-    debug_mode = os.getenv('FLASK_ENV', 'production').lower() in ('development', 'debug')
-    
-    logger.info(f"Starting Flask server on {host}:{port} (debug={debug_mode})")
-    app.run(host=host, port=port, debug=debug_mode)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
