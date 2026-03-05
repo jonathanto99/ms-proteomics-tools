@@ -81,19 +81,47 @@ def serve_index():
 @app.route('/<path:path>')
 def serve_static(path):
     """
-    Manually serves static files. 
-    Explicitly checks for file existence to avoid MIME type errors.
+    Manually serves static files with enhanced diagnostics for corporate environments.
     """
-    # Normalize path for Windows compatibility
     safe_path = path.replace('/', os.sep)
     full_path = os.path.abspath(os.path.join(STATIC_FOLDER, safe_path))
     
-    # Security check: ensure the resolved path is inside the STATIC_FOLDER
+    # Security check
     if not full_path.startswith(STATIC_FOLDER):
         logger.warning(f"Security: Blocked attempt to access path outside static folder: {full_path}")
         return jsonify({'error': 'Forbidden'}), 403
 
-    if os.path.isfile(full_path):
+    # Logic to handle potential visibility issues with .js files on corporate PCs
+    exists = os.path.isfile(full_path)
+    
+    if not exists:
+        # Diagnostic: List files in the parent directory to see what Python sees
+        parent_dir = os.path.dirname(full_path)
+        logger.warning(f"File not found: {path}. Checking directory visibility: {parent_dir}")
+        if os.path.isdir(parent_dir):
+            try:
+                files_in_dir = os.listdir(parent_dir)
+                logger.info(f"Files visible in {os.path.basename(parent_dir)}: {files_in_dir}")
+                
+                # Fuzzy matching: try to find the file case-insensitively
+                requested_name = os.path.basename(full_path).lower()
+                for f in files_in_dir:
+                    if f.lower() == requested_name:
+                        logger.info(f"Fuzzy match found: {f}. Serving this instead.")
+                        return send_from_directory(parent_dir, f)
+            except Exception as e:
+                logger.error(f"Could not list directory: {e}")
+        
+        # EMERGENCY: Try to stream the file directly even if isfile() says it's not there
+        # Sometimes security software blocks 'stat' but allows 'read'
+        if path.endswith(('.js', '.css')):
+            try:
+                logger.info(f"Emergency Attempt: Force-reading {path} despite 'not found' status")
+                return send_from_directory(STATIC_FOLDER, path)
+            except Exception as e:
+                logger.warning(f"Emergency Attempt failed for {path}: {e}")
+
+    if exists:
         mime_type, _ = mimetypes.guess_type(full_path)
         logger.info(f"Serving file: {path} (MIME: {mime_type})")
         return send_from_directory(STATIC_FOLDER, path)
@@ -102,7 +130,7 @@ def serve_static(path):
     # do NOT fall back to index.html. Return a 404 to avoid MIME type errors.
     ext = os.path.splitext(path)[1].lower()
     if ext in ('.js', '.css', '.png', '.jpg', '.svg', '.ico', '.map'):
-        logger.warning(f"Asset not found: {path} (Expected at: {full_path})")
+        logger.warning(f"Asset definitively not found: {path}")
         return jsonify({'error': 'Asset not found'}), 404
 
     # If the path is an API call, return 404
