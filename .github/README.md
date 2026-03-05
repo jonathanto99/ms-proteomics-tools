@@ -120,7 +120,7 @@ pytest tests/
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
+This project is licensed under the Apache 2.0 License - see [LICENSE](LICENSE) file.
 
 ## Links
 
