@@ -4,13 +4,13 @@ Modern web application for analyzing and visualizing mass spectrometry proteomic
 
 ## Technical Architecture
 
-This platform moves beyond static scripts to provide a scalable, web-based interface for proteomics analysis.
+This platform provides a scalable, web-based interface for proteomics analysis with clean separation of concerns.
 
--   **Backend:** Flask API with RESTful endpoints for mzML processing.
-
--   **Visualization:** Headless Matplotlib generation (`Agg` backend) for high-DPI export without GUI dependencies.
-
--   **Performance:** In-memory stream handling (`io.BytesIO`) to eliminate disk I/O bottlenecks during high-volume plotting.
+- **Backend**: Flask REST API with modular architecture (DataProcessor + PlotGenerator classes)
+- **Data Processing**: Vectorized pandas operations for high-performance analysis on large datasets
+- **Visualization**: Headless Matplotlib generation (`Agg` backend) for high-DPI export without GUI dependencies
+- **Performance**: In-memory stream handling (`io.BytesIO`) to eliminate disk I/O bottlenecks; instance-level caching for repeated operations
+- **File Management**: Temporary directory storage with secure filename handling
 
 ## Features
 
@@ -49,14 +49,14 @@ This platform moves beyond static scripts to provide a scalable, web-based inter
 
 ### Installation
 
-1.  **Set up backend**
+1. **Set up backend**
 
-    ``` bash
-    cd backend
-    pip install -r requirements.txt
-    ```
+   ```bash
+   cd backend
+   pip install -e "../../../[dev]"
+   ```
 
-2.  **Set up frontend**
+2. **Set up frontend**
 
     ``` bash
     cd frontend
@@ -138,35 +138,67 @@ Protein.Ids Protein.Names   Genes   First.Protein.Description   Proteotypic Prot
 
 ## Algorithm Details
 
-### Organism Identification
+### Organism Identification (Vectorized)
 
--   **HeLa**: Proteins matching `sp\|` (UniProt SwissProt)
--   **E.coli**: Proteins containing `ECOLI`
--   **Yeast**: Proteins containing `YEAST`
--   **Unknown**: Everything else
+Protein IDs are classified using fast vectorized string matching across the entire dataset at once (preferred for files with >100k rows).
+
+**Pattern Matching by Organism:**
+- **HeLa**: `_HUMAN`, `HOMO_SAPIENS`
+- **E.coli**: `_ECOLI`, `_ECOL`, `_ECO*`, `_SHIF*`, `ESCHERICHIA`
+- **Yeast**: `_YEAST`, `SACCHAROMYCES`, `CEREVISIAE`
+- **Unknown**: No matching pattern
+
+See [logic.py](./backend/logic.py#L32-L45) for complete pattern definitions.
 
 ### Intensity Ratio Calculation
 
-1.  Identify consensus proteins (present in both E25 and E100)
-2.  Calculate log2(E25/E100) for each protein
-3.  Group by organism
-4.  Display as box plots with expected ratio lines:
-    -   HeLa: 0 (constant concentration)
-    -   E.coli: -2 (log2(25/100))
-    -   Yeast: +1 (log2(150/75))
+**Purpose**: Calculate log2(E25/E100) intensity ratios for quality control assessment.
+
+**Algorithm Steps**:
+1. **Parse filenames** to detect E25 and E100 sample pairs
+2. **Find consensus proteins**: Proteins with valid, non-zero intensities in BOTH E25 and E100 samples
+3. **Calculate ratios**: `log2(E25_intensity / E100_intensity)` for each consensus protein
+4. **Transform**: Log transformation normalizes the distribution and makes fold-changes symmetric
+5. **Filter**: Remove inf/NaN values to ensure statistical validity
+6. **Visualize**: Display as box plots with median values and expected ratio reference lines
+
+**Expected Ratio by Organism**:
+- **HeLa**: ~0 (constant concentration across runs)
+- **E.coli**: ~-2 (log2(25/100) = -2, represents 4-fold dilution)
+- **Yeast**: ~+1 (log2(150/75) = 1, represents 2-fold concentration increase)
+
+**Implementation Details**: See [logic.py](./backend/logic.py) for detailed docstrings explaining:
+- `identify_organism_vectorized()` - Vectorized organism classification
+- `calculate_intensity_ratios()` - Consensus protein filtering and ratio computation
+- `calculate_sample_comparison_data()` - Sample pairing and grouping logic
 
 ## API Endpoints
 
-| Method | Endpoint                   | Description                   |
-|--------|----------------------------|-------------------------------|
-| POST   | `/api/upload`              | Upload TSV file               |
-| GET    | `/api/files`               | List uploaded files           |
-| DELETE | `/api/files/<filename>`    | Delete specific file          |
-| POST   | `/api/generate-plot`       | Generate protein count plot   |
-| POST   | `/api/generate-comparison` | Generate intensity ratio plot |
-| POST   | `/api/export/bar`          | Export bar chart (PNG)        |
-| POST   | `/api/export/comparison`   | Export comparison plot (PNG)  |
-| POST   | `/api/export/all`          | Export both plots (ZIP)       |
+**Health & File Management:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check for monitoring |
+| `/api/upload` | POST | Upload TSV files (multi-file support) |
+| `/api/files` | GET | List currently tracked files |
+| `/api/files` | DELETE | Clear all files and cache |
+
+**Visualization Generation:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/plot/bar-chart` | POST | Generate protein count bar chart (base64 PNG) |
+| `/api/plot/sample-comparison` | POST | Generate 3-panel intensity ratio boxplots (base64 PNG) |
+
+**Export & Download:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/export/bar-chart` | POST | Export bar chart as high-res PNG (300 DPI) |
+| `/api/export/sample-comparison` | POST | Export comparison plots as high-res PNG (300 DPI) |
+| `/api/export/all` | POST | Export all plots as ZIP archive |
+
+For detailed endpoint documentation, see [app.py](./backend/app.py).
 
 ## Tech Stack
 
@@ -215,374 +247,78 @@ CORS(app)
 
 -   Verify at least one E25 and one E100 file uploaded
 -   Check browser console for error messages
--   Ensure files contain protein intensity data
+-   Ensure files contain required columns (Protein IDs and intensity values)
+-   Verify files contain proteins from the expected organisms (HeLa, E.coli, Yeast)
 
-## Documentation
+## Backend Code Organization
 
--   [**ARCHITECTURE.md**](./ARCHITECTURE.md): Technical architecture and design patterns
--   [**Backend README**](./backend/README.md): Flask API documentation (if exists)
--   [**Frontend README**](./frontend/README.md): React component documentation
+The backend is organized into clean, modular components:
+
+### DataProcessor (logic.py)
+Handles all data ingestion, organism classification, and quantitative calculations.
+- **Vectorized Operations**: Uses pandas `.str` accessor for fast pattern matching across entire datasets
+- **Caching**: Caches loaded data to avoid redundant file I/O
+- **Error Handling**: Graceful fallbacks when selective column loading fails
+
+### PlotGenerator (logic.py)
+Manages matplotlib visualization logic with reusable methods.
+- **DRY Principle**: Single `_create_bar_chart_figure()` method used by display, individual export, and ZIP export endpoints
+- **Flexible Sizing**: Figure dimensions parameterized for different use cases (web display vs. high-res export)
+- **Color Consistency**: Organisms use consistent colors across all visualizations
+
+### Flask Routes (app.py)
+RESTful API endpoints with security and error handling.
+- **Security Headers**: CSP, cache control, and no-store for sensitive data
+- **Input Validation**: Secure filename handling to prevent directory traversal
+- **Error Messages**: Helpful JSON responses with appropriate HTTP status codes
+
+For enhanced comments and docstrings, see [app.py](./backend/app.py) and [logic.py](./backend/logic.py).
 
 ## Contributing
 
 See [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
 
+Key guidelines for backend development:
+- Follow PEP 8 style guidelines (enforced with Ruff)
+- Add docstrings to all functions and classes
+- Use type hints where applicable (checked with mypy)
+- Run tests: `pytest tests/`
+- Format code: `ruff format programs/`
+- Lint: `ruff check --fix programs/`
+
 ## License
 
-See [LICENSE](../../LICENSE) in the root repository.
-
-## Features
-
--   Modern, dark-themed UI
--   Drag-and-drop file upload
--   Two visualization modes:
-    -   Protein ID bar chart
-    -   Sample Intensity Comparison (E25 vs E100)
--   Native desktop application
--   Can be deployed as web server (Flask standalone)
--   Automatic mix detection and grouping
--   Color-coded E25/E100 comparison plots
-
-## API Endpoints
-
--   `GET /api/health` - Health check
--   `POST /api/upload` - Upload TSV files
--   `GET /api/files` - List uploaded files
--   `DELETE /api/files` - Clear all files
--   `POST /api/plot/bar-chart` - Generate protein ID bar chart
--   `POST /api/plot/sample-comparison` - Generate E25 vs E100 intensity comparison
-
-See [API_CHANGES.md](./API_CHANGES.md) for detailed migration information.
-
-## Tech Stack
-
-**Frontend:** - React 18 - TypeScript 5 - Vite (build tool) - Lucide React (icons) - Modern CSS
-
-**Backend:** - Flask (REST API) - Pandas (data processing) - Matplotlib (plotting) - NumPy (numerical operations)
-
-**Desktop:** - PyWebView (native window) - Threading (Flask background server)
-
-## Converting to Web App
-
-To deploy as a standalone web server instead of desktop app:
-
-1.  Remove PyWebView dependency
-2.  Run Flask in production mode (e.g., with Gunicorn)
-3.  Serve React build from Flask static folder
-4.  Deploy to server (Heroku, DigitalOcean, AWS, etc.)
+See [LICENSE](../../LICENSE) in the root repository (GPLv3).
 
 ## File Structure
 
-```         
+```
 mspp_web/
 ├── backend/
-│   ├── app.py              # Flask API
-│   └── requirements.txt
+│   ├── app.py              # Flask API with endpoints
+│   ├── logic.py            # DataProcessor and PlotGenerator classes
+│   └── __pycache__/
 ├── frontend/
 │   ├── src/
 │   │   ├── App.tsx         # Main React component
 │   │   ├── App.css         # Styles
 │   │   ├── main.tsx        # Entry point
-│   │   └── index.css       # Global styles
+│   │   ├── index.css       # Global styles
+│   │   └── vite-env.d.ts   # TypeScript declarations
 │   ├── index.html
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
-├── desktop_app.py          # Desktop launcher
 └── README.md
 ```
 
-## Expected File Format
-
-Files should follow the naming convention: - `report.pg_matrix_E25_<mix_params>.tsv` - `report.pg_matrix_E100_<mix_params>.tsv`
-
-Example: - `report.pg_matrix_E25_30_4_440960_600.tsv` - `report.pg_matrix_E100_30_4_440960_600.tsv`
-
-The application automatically: - Detects E25/E100 patterns (flexible: E25, E-25, E_25, etc.) - Groups samples by mix identifier - Separates different mixes with visual boundaries
-
-## Next Steps
-
--   Add plot export (PNG/SVG download)
--   Add data table view
--   Implement plot zoom/pan
--   Add loading progress indicators
--   Create installer (PyInstaller + NSIS)
--   Add statistics summary panel
-
-# MSPP Web Application Architecture
-
-## Overview
-
-The MS Protein & Peptide (MSPP) Data Plotter is a full-stack web application for analyzing and visualizing mass spectrometry proteomics data from Orbitrap Astral MS (DIA-NN output).
-
-## Technology Stack
-
-### Backend
-
--   **Framework**: Flask (Python 3.14+)
--   **Data Processing**: pandas, numpy
--   **Visualization**: matplotlib (Agg backend)
--   **CORS**: flask-cors for cross-origin requests
-
-### Frontend
-
--   **Framework**: React 18 + TypeScript
--   **Build Tool**: Vite
--   **Icons**: lucide-react
--   **Styling**: CSS3 with CSS variables
-
-## Architecture Pattern
-
-### Backend (Flask REST API)
-
-#### Class Structure
-
-```         
-DataProcessor
-├── Handles all data loading and processing
-├── Caching mechanism for performance
-├── Organism identification (vectorized)
-└── Intensity ratio calculations
-
-PlotGenerator
-├── Creates matplotlib visualizations
-├── _create_bar_chart_figure() - Reusable bar chart generator
-├── _create_comparison_figure() - Reusable comparison plot generator
-├── create_bar_chart() - Returns base64 for web display
-├── create_sample_comparison_plot() - Returns base64 for web display
-└── _fig_to_base64() - Converts matplotlib figures to base64
-```
-
-#### Key Design Decisions
-
-1.  **Separation of Concerns**: Data processing logic separated from plotting logic
-2.  **DRY Principle**: Reusable `_create_*_figure()` methods eliminate code duplication
-3.  **Caching**: File data cached to avoid redundant reads
-4.  **Vectorization**: Pandas vectorized operations for performance
-5.  **Consensus Proteins**: Only proteins with valid intensities in both E25 and E100
-6.  **Flexible Sizing**: Figure size parameterized for different use cases (display vs. export)
-
-#### Refactoring (December 2024)
-
--   **Eliminated 200+ lines of duplicated code** by extracting reusable plot generation methods
--   **Reduced backend from 857 to 714 lines** (\~17% reduction)
--   **Created `_create_bar_chart_figure()`**: Shared by display, individual export, and ZIP export
--   **Created `_create_comparison_figure()`**: Shared by display, individual export, and ZIP export
--   **Benefits**: Single source of truth, easier maintenance, consistent visualizations
-
-#### API Endpoints
-
-| Endpoint | Method | Purpose |
-|---------------------------|----------------------|------------------------|
-| `/api/upload` | POST | Upload TSV files |
-| `/api/files` | GET | List uploaded files |
-| `/api/files` | DELETE | Clear all files |
-| `/api/plot/bar-chart` | POST | Generate protein count bar chart (base64) |
-| `/api/plot/sample-comparison` | POST | Generate intensity ratio plots (base64) |
-| `/api/export/bar-chart` | POST | Export bar chart as PNG (300 DPI) |
-| `/api/export/sample-comparison` | POST | Export intensity plots as PNG (300 DPI) |
-| `/api/export/all` | POST | Export all plots as ZIP |
-
-### Frontend (React + TypeScript)
-
-#### Component Structure
-
-```         
-App.tsx (Main Component)
-├── File Upload Section
-│   ├── File browser
-│   ├── Upload button
-│   └── File list display
-├── Plot Controls Section
-│   ├── Generate Bar Chart button
-│   ├── Generate Comparison button
-│   └── Export All Plots button
-└── Plot Display Section
-    ├── Loading state
-    ├── Plot image display
-    ├── Export Plot button (per plot)
-    └── Empty state
-```
-
-#### State Management
-
--   `files`: Selected files from file input
--   `uploadedFiles`: Files successfully uploaded to backend
--   `loading`: Loading state for API calls
--   `plotImage`: Base64 image data from backend
--   `currentPlotType`: Tracks which plot is displayed
--   `error`: Error messages
-
-#### Key Features
-
-1.  **File Management**: Multi-file upload with TSV/TXT filtering
-2.  **Real-time Feedback**: Loading indicators and error messages
-3.  **Export Options**: Individual plot export or ZIP of all plots
-4.  **Responsive Design**: Grid layout with mobile support
-
-## Data Flow
-
-### Upload Flow
-
-```         
-User selects files → Frontend validates → POST /api/upload
-→ Backend saves to temp → Returns file list → Frontend updates UI
-```
-
-### Plot Generation Flow
-
-```         
-User clicks plot button → POST /api/plot/{type}
-→ Backend loads data → Processes → Generates plot
-→ Returns base64 PNG → Frontend displays image
-```
-
-### Export Flow
-
-```         
-User clicks export → POST /api/export/{type}
-→ Backend generates high-res plot → Returns binary PNG/ZIP
-→ Frontend triggers download
-```
-
-## Algorithm: Intensity Ratio Calculation
-
-### Purpose
-
-Calculate log2(E25/E100) intensity ratios for quality control assessment.
-
-### Steps
-
-1.  **Identify Samples**: Parse filenames to detect E25 and E100 pairs
-2.  **Find Consensus Proteins**: Proteins with valid intensities in BOTH samples
-3.  **Calculate Ratios**: `log2(E25_intensity / E100_intensity)` per protein
-4.  **Filter**: Remove inf/NaN values
-5.  **Return**: Array of ratios (one per protein)
-
-### Expected Ratios
-
--   **HeLa**: \~0 (constant concentration)
--   **E.coli**: \~-2 (log2(25/100) = -2, 4-fold dilution)
--   **Yeast**: \~+1 (log2(150/75) = 1, 2-fold concentration)
-
-### Validation
-
--   HeLa median within ±0.5 of 0
--   E.coli median between -2.5 and -1.5
--   Yeast median between 0.5 and 1.5
-
-## Jupyter Notebook vs Web App
-
-### Feature Parity
-
-Both tools provide: - ✓ File upload/loading - ✓ Organism identification - ✓ Protein count bar charts - ✓ Intensity ratio box plots (3-panel) - ✓ Statistical summaries - ✓ Validation checks - ✓ High-quality plot export
-
-### Differences
-
-| Feature      | Notebook             | Web App            |
-|--------------|----------------------|--------------------|
-| Interface    | Jupyter cells        | React UI           |
-| File Loading | tkinter dialog       | Browser upload     |
-| Plot Display | Inline matplotlib    | Base64 images      |
-| Export       | Manual save          | Download buttons   |
-| Portability  | Requires Python      | Browser-based      |
-| Use Case     | Research/Development | Production/Routine |
-
-## Performance Optimizations
-
-### Backend
-
-1.  **Caching**: Loaded data cached to avoid re-reading files
-2.  **Vectorization**: Pandas operations instead of row-by-row processing
-3.  **Lazy Loading**: Data only loaded when needed
-4.  **Memory Management**: Figures closed after conversion to avoid leaks
-
-### Frontend
-
-1.  **Build Optimization**: Vite tree-shaking and minification
-2.  **Code Splitting**: React lazy loading (future enhancement)
-3.  **Asset Optimization**: CSS minification
-
-## Security Considerations
-
-1.  **File Upload**: Only TSV/TXT files accepted
-2.  **Temp Files**: Stored in system temp directory
-3.  **CORS**: Enabled for development, should be restricted in production
-4.  **Input Validation**: File existence and format checks
-
-## Future Enhancements
-
-### Planned Features
-
--   [ ] Multiple file comparison (\>2 replicates)
--   [ ] Custom organism patterns
--   [ ] CSV export of statistics
--   [ ] Batch processing mode
--   [ ] User authentication
--   [ ] Database storage for results
-
-### Technical Debt
-
--   [ ] Add comprehensive unit tests
--   [ ] Implement logging configuration
--   [ ] Add API rate limiting
--   [ ] Improve error handling granularity
--   [ ] Add TypeScript strict mode
--   [ ] Implement proper state management (Redux/Zustand)
-
-## Development Workflow
-
-### Backend Development
-
-``` bash
-cd programs/mspp_web/backend
-python app.py  # Runs on http://localhost:5000
-```
-
-### Frontend Development
-
-``` bash
-cd programs/mspp_web/frontend
-npm run dev    # Runs on http://localhost:5173
-```
-
-### Production Build
-
-``` bash
-cd programs/mspp_web/frontend
-npm run build  # Outputs to dist/
-# Backend serves from dist/ folder
-```
-
-## Testing
-
-### Manual Testing Checklist
-
--   [ ] Upload multiple TSV files
--   [ ] Generate bar chart
--   [ ] Generate intensity comparison
--   [ ] Export individual plots
--   [ ] Export all plots as ZIP
--   [ ] Clear files and re-upload
--   [ ] Test with invalid files
--   [ ] Test with missing E25 or E100
-
-### Example Test Files
-
-Located in: `tests/Sample Files/Hey Astral/` - `report.pg_matrix_E25_8_4_20_0.tsv` - `report.pg_matrix_E100_8_4_20_0.tsv`
-
-## Maintenance
-
-### Common Issues
-
-**Issue**: Plots not displaying **Solution**: Rebuild frontend with `npm run build`
-
-**Issue**: FileNotFoundError in notebook **Solution**: Use file upload dialog instead of hardcoded paths
-
-**Issue**: No data in plots **Solution**: Verify E25/E100 files contain matching proteins
-
-**Issue**: Memory errors **Solution**: Clear cache with `/api/files DELETE` endpoint
-
-## Contributing
-
-See `CONTRIBUTING.md` for guidelines on: - Code style (PEP 8 for Python, ESLint for TypeScript) - Commit message format - Pull request process - Testing requirements
+---
+
+**Last Updated**: March 5, 2026
+
+**Related Documentation**:
+- [App.py](./backend/app.py) - Flask API implementation with detailed comments
+- [Logic.py](./backend/logic.py) - DataProcessor and PlotGenerator with enhanced docstrings
+- Main [README](../../README.md) - Repository overview
+- [CHANGELOG](../../CHANGELOG.md) - Version history and refactoring details
+- [CONTRIBUTING](../../CONTRIBUTING.md) - Development guidelines
