@@ -52,13 +52,15 @@ def validate_python_environment():
 validate_python_environment()
 
 # Now safe to import Flask and other modules
-# Add backend to path (adjust for location in scripts/launch/)
+# Setup Python path for proper module importing
 project_root = Path(__file__).parent.parent.parent
-backend_path = project_root / 'programs' / 'mspp_web' / 'backend'
-sys.path.insert(0, str(backend_path))
+backend_parent = project_root / 'programs' / 'mspp_web'
+
+# Add the parent directory so 'backend' can be imported as a package
+sys.path.insert(0, str(backend_parent))
 
 try:
-    from app import app
+    from backend.app import app
 except ImportError as e:
     print("\n" + "=" * 60)
     print("ERROR: Failed to import Flask application!")
@@ -66,6 +68,9 @@ except ImportError as e:
     print(f"\n{e}")
     print("\nMake sure dependencies are installed:")
     print("  pip install -e '.[dev]'")
+    print("\nIf the error mentions 'backend', ensure:")
+    print("  - Python version is 3.10+")
+    print("  - All dependencies are installed: pip install -e '.[dev]'")
     print("\n" + "=" * 60 + "\n")
     sys.exit(1)
 
@@ -119,7 +124,7 @@ Environment Variables:
     # Print startup information
     mode_label = "Production" if is_production else "Development"
     print("=" * 60)
-    print(f"🚀 MSPP Data Plotter - {mode_label} Mode")
+    print(f"MSPP Data Plotter - {mode_label} Mode")
     print("=" * 60)
     print("")
     print(f"Environment: {mode_label}")
@@ -128,7 +133,7 @@ Environment Variables:
     print("")
 
     # Start Flask server
-    print("⏳ Starting backend server...")
+    print("Starting backend server...")
     print("")
 
     try:
@@ -137,7 +142,7 @@ Environment Variables:
         print("\n\nApp stopped by user.")
         sys.exit(0)
     except Exception as e:
-        print(f"\n\n❌ Error: {e}", file=sys.stderr)
+        print(f"\n\nError: {e}", file=sys.stderr)
         sys.exit(1)
 
 
