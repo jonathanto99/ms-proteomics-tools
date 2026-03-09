@@ -3,30 +3,45 @@
 *.pdf
 *.zip
 *.pptx
+*.ppt
 *.docx
 *.doc
 *.xlsx
+*.xls
+*.xltx
+*.xlt
 *.mov
 *.mp4
+*.fcs
+*.exe
+*.dll
+*.msi
+*.tsv
 
 # Python
-.venv/
-.pixi/
 __pycache__/
+*.env
 *.pyc
 *.pyo
 *.pyd
-.Python
 *.so
 *.egg
 *.egg-info/
-dist/
-build/
+*.log
 .pytest_cache/
 .coverage
+.Python
+.env/
+.venv/
+.pixi/
+bin/
+dist/
+build/
+out/
+target/
+dist/
+build/
 htmlcov/
-*.log
-*.tsv
 
 # Ruff
 .ruff_cache/
