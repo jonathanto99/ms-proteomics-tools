@@ -1,3 +1,14 @@
+# --- THE SAFETY SHIELD (Global Ignore) ---
+# Ignore these file types EVERYWHERE in the vault
+*.pdf
+*.zip
+*.pptx
+*.docx
+*.doc
+*.xlsx
+*.mov
+*.mp4
+
 # Python
 .venv/
 .pixi/
@@ -52,6 +63,7 @@ desktop.ini
 !programs/mspp_web/frontend/dist/# pixi environments
 .pixi/*
 !.pixi/config.toml
+
 # pixi environments
 .pixi/*
 !.pixi/config.toml

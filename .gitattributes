@@ -21,6 +21,12 @@
 *.sh text eol=lf
 *.bash text eol=lf
 
+# Configuration files
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.env.* text eol=lf
+
 # Windows-specific scripts - use CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
@@ -43,15 +49,11 @@
 *.exe binary
 
 # Pixi SCM syntax highlighting & preventing 3-way merges
-pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff linguist-detectable=false
+pixi.lock merge=binary 
+linguist-language=YAML 
+linguist-generated=true -diff 
+linguist-detectable=false
 
 # Categorize Jupyter notebooks specifically as documentation
 *.ipynb linguist-documentation=true
 *.ipynb linguist-detectable=false
-
-# Configuration files
-.gitignore text eol=lf
-.gitattributes text eol=lf
-.editorconfig text eol=lf
-.env.* text eol=lf
-
