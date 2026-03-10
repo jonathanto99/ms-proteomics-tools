@@ -36,6 +36,9 @@ if [ -f ".venv/bin/python3" ]; then
 elif [ -f ".venv/bin/python" ]; then
     PYTHON_EXE=".venv/bin/python"
     PYTHON_SOURCE="virtual environment (.venv)"
+elif [ -f ".pixi/envs/default/bin/python" ]; then
+    PYTHON_EXE=".pixi/envs/default/bin/python"
+    PYTHON_SOURCE="pixi environment (.pixi/envs/default)"
 elif command -v python3 &> /dev/null; then
     PYTHON_EXE="python3"
     PYTHON_SOURCE="system Python3"
@@ -91,7 +94,7 @@ echo "Attempting to launch: $(pwd)/scripts/launch/launcher.py --prod"
 echo ""
 
 # Run the launcher
-"$PYTHON_EXE" "$(pwd)/scripts/launch/launcher.py" --prod
+"$PYTHON_EXE" "scripts/launch/launcher.py" --prod
 
 EXIT_CODE=$?
 echo ""

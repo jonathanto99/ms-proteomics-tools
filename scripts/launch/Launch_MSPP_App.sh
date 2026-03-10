@@ -36,6 +36,9 @@ if [ -f ".venv/bin/python3" ]; then
 elif [ -f ".venv/bin/python" ]; then
     PYTHON_EXE=".venv/bin/python"
     PYTHON_SOURCE="virtual environment (.venv)"
+elif [ -f ".pixi/envs/default/bin/python" ]; then
+    PYTHON_EXE=".pixi/envs/default/bin/python"
+    PYTHON_SOURCE="pixi environment (.pixi/envs/default)"
 elif command -v python3 &> /dev/null; then
     PYTHON_EXE="python3"
     PYTHON_SOURCE="system Python3"
