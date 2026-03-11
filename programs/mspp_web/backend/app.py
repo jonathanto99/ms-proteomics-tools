@@ -65,8 +65,15 @@ def serve_static(path):
     static_root = Path(app.static_folder).resolve()
     # Normalize the user-supplied path to prevent directory traversal
     safe_rel = os.path.normpath(path)
-    # Reject absolute paths or paths that attempt to escape the static root
-    if os.path.isabs(safe_rel) or safe_rel.startswith('..'):
+    # Reject absolute or drive-qualified paths, or paths escaping the static root
+    drive, _ = os.path.splitdrive(safe_rel)
+    if (
+        os.path.isabs(safe_rel)
+        or safe_rel.startswith('..')
+        or (os.sep and safe_rel.startswith(os.sep))
+        or (os.altsep and safe_rel.startswith(os.altsep))
+        or drive
+    ):
         return jsonify({'error': 'Not found'}), 404
     full_path = static_root / safe_rel
     if is_within_directory(static_root, full_path) and full_path.is_file():
