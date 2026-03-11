@@ -47,9 +47,13 @@ def serve_index():
 @app.route('/<path:path>')
 def serve_static(path):
     """Serves static assets or falls back to index.html for React Router."""
-    full_path = Path(app.static_folder) / path
-    if full_path.exists() and full_path.is_file():
-        return send_from_directory(app.static_folder, path)
+    static_root = Path(app.static_folder).resolve()
+    full_path = (static_root / path).resolve()
+
+    # Ensure the resolved path is within the static root directory
+    if static_root == full_path or static_root in full_path.parents:
+        if full_path.exists() and full_path.is_file():
+            return send_from_directory(app.static_folder, path)
 
     # Fallback to index.html for client-side routing, unless it's an API call
     if not path.startswith('api/'):
