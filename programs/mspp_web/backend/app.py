@@ -30,6 +30,21 @@ BACKEND_DIR = Path(__file__).parent.absolute()
 FRONTEND_DIST = (BACKEND_DIR.parent / 'frontend' / 'dist').absolute()
 TEMP_DIR = Path(os.getenv('MSPP_TEMP_DIR', tempfile.gettempdir()))
 
+
+def is_within_directory(base: Path, target: Path) -> bool:
+    """
+    Return True if the resolved target path is the same as, or is located within,
+    the resolved base directory.
+    """
+    base_resolved = base.resolve()
+    target_resolved = target.resolve()
+    try:
+        target_resolved.relative_to(base_resolved)
+        return True
+    except ValueError:
+        return False
+
+
 # Initialize Flask with the standard static folder configuration
 app = Flask(__name__, static_folder=str(FRONTEND_DIST), static_url_path='')
 CORS(app)
@@ -48,8 +63,8 @@ def serve_index():
 def serve_static(path):
     """Serves static assets or falls back to index.html for React Router."""
     static_root = Path(app.static_folder).resolve()
-    full_path = (static_root / path).resolve()
-    if (full_path == static_root or static_root in full_path.parents) and full_path.exists() and full_path.is_file():
+    full_path = static_root / path
+    if is_within_directory(static_root, full_path) and full_path.is_file():
         return send_from_directory(app.static_folder, path)
 
     # Fallback to index.html for client-side routing, unless it's an API call
