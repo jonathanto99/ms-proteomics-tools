@@ -340,7 +340,7 @@ class PlotGenerator:
         x_labels = [Path(self.processor.file_to_raw_column.get(s, s)).name for s in counts.index]
         ax.set_xticks(range(len(counts)))
         ax.set_xticklabels(x_labels, rotation=45, ha="right")
-        ax.set_title("Protein ID Counts by Organism", fontsize=14, fontweight="bold")
+        ax.set_title("Protein/Peptide ID Counts by Organism", fontsize=14, fontweight="bold")
         ax.legend(title="Organism", loc="upper right")
         ax.grid(axis="y", alpha=0.3)
         plt.tight_layout()
