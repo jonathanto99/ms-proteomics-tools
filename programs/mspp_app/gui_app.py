@@ -10,7 +10,10 @@ import os
 import matplotlib.pyplot as plt
 import customtkinter as ctk
 
-from logic import DataProcessor, PlotGenerator
+try:
+    from mspp_app.logic import DataProcessor, PlotGenerator
+except ImportError:
+    from logic import DataProcessor, PlotGenerator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 ctk.set_appearance_mode("Dark")
