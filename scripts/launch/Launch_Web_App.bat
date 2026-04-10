@@ -8,11 +8,11 @@ REM Navigate to project root (from scripts/launch directory, go up 2 levels)
 cd /d "%~dp0..\.." 
 
 REM Verify we're in the correct directory
-if not exist "scripts\launch\launcher.py" (
+if not exist "scripts\launch\web_launcher.py" (
     echo.
     echo ERROR: Could not find launcher.py!
     echo.
-    echo Expected: %CD%\scripts\launch\launcher.py
+    echo Expected: %CD%\scripts\launch\web_launcher.py
     echo.
     echo This usually means the script was moved or the path is incorrect.
     echo.
@@ -101,10 +101,10 @@ set FLASK_HOST=127.0.0.1
 set FLASK_PORT=5000
 
 REM Run the launcher
-echo Attempting to launch: %CD%\scripts\launch\launcher.py
+echo Attempting to launch: %CD%\scripts\launch\web_launcher.py
 echo.
 
-"!PYTHON_EXE!" "%CD%\scripts\launch\launcher.py"
+"!PYTHON_EXE!" "%CD%\scripts\launch\web_launcher.py"
 
 if errorlevel 1 (
     echo.
@@ -114,7 +114,7 @@ if errorlevel 1 (
     echo.
     echo Debug Info:
     echo   Python: !PYTHON_EXE!
-    echo   Script: %CD%\scripts\launch\launcher.py
+    echo   Script: %CD%\scripts\launch\web_launcher.py
     echo   FLASK_ENV: %FLASK_ENV%
     echo   FLASK_PORT: %FLASK_PORT%
     echo.

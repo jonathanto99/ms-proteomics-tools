@@ -1449,7 +1449,7 @@ packages:
 - pypi: ./
   name: byu-core-ms-lab
   version: 0.2.0
-  sha256: d3bb316f612826e68281e20b1e7507f4a08ed6977b1773b4584580f1c0aa4eba
+  sha256: f3dab11b2ebcb7ae7301cadb9a14e5485340d7dddd271df7b0e0c6381ff799d0
   requires_dist:
   - numpy>=2.4.2,<3
   - pandas>=3.0.0,<4

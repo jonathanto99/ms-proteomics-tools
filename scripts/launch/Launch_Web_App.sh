@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# MSPP Data Plotter - Desktop Launcher (Production Mode)
-# Run this script to launch the app in production mode (optimized performance, no debugging)
-# chmod +x Launch_MSPP_App_Prod.sh && ./Launch_MSPP_App_Prod.sh
+# MSPP Data Plotter - Desktop Launcher (Development Mode)
+# Run this script to launch the app in development mode with debugging enabled
+# chmod +x Launch_MSPP_App.sh && ./Launch_MSPP_App.sh
 
 set -e  # Exit on error
 
@@ -10,11 +10,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../.."
 
 # Verify we're in the correct directory
-if [ ! -f "scripts/launch/launcher.py" ]; then
+if [ ! -f "scripts/launch/web_launcher.py" ]; then
     echo ""
-    echo "ERROR: Could not find launcher.py!"
+    echo "ERROR: Could not find web_launcher.py!"
     echo ""
-    echo "Expected: $(pwd)/scripts/launch/launcher.py"
+    echo "Expected: $(pwd)/scripts/launch/web_launcher.py"
     echo ""
     echo "This usually means the script was moved or the path is incorrect."
     echo ""
@@ -22,7 +22,7 @@ if [ ! -f "scripts/launch/launcher.py" ]; then
 fi
 
 echo "==============================================================="
-echo "Starting MSPP Data Plotter (Production Mode)"
+echo "Starting MSPP Data Plotter (Development Mode)"
 echo "==============================================================="
 echo ""
 
@@ -85,16 +85,16 @@ fi
 
 echo ""
 
-# Set production environment variables (no debugging, optimized)
-export FLASK_ENV=production
+# Set development environment variables
+export FLASK_ENV=development
 export FLASK_HOST=127.0.0.1
 export FLASK_PORT=5000
 
-echo "Attempting to launch: $(pwd)/scripts/launch/launcher.py --prod"
+echo "Attempting to launch: $(pwd)/scripts/launch/web_launcher.py"
 echo ""
 
 # Run the launcher
-"$PYTHON_EXE" "scripts/launch/launcher.py" --prod
+"$PYTHON_EXE" "$(pwd)/scripts/launch/web_launcher.py"
 
 EXIT_CODE=$?
 echo ""
