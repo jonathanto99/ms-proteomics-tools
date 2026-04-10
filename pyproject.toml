@@ -60,7 +60,7 @@ dependencies = [
     "ipywidgets>=8.1.8,<9", 
     "gunicorn>=25.1.0,<26", 
     "waitress>=3.0.2,<4", 
-    "pywebview>=6.1,<7",
+    "pywebview>=6.1,<7", "customtkinter>=5.2.2,<6",
 ]
 
 [project.optional-dependencies]
@@ -240,4 +240,5 @@ ty = ">=0.0.17,<0.0.18"
 nicegui = ">=3.7.1,<4"
 quarto = ">=1.8.27,<2"
 polars = ">=1.38.1,<2"
+pyinstaller = ">=6.19.0,<7"
 
