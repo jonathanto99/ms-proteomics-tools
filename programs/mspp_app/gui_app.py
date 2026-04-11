@@ -4,16 +4,17 @@ MSPP Data Plotter - CustomTkinter API
 This module serves the MSPP GUI application and provides analytical endpoints.
 """
 
-from tkinter import filedialog, messagebox
-import threading
 import os
-import matplotlib.pyplot as plt
+import threading
+from tkinter import filedialog, messagebox
+
 import customtkinter as ctk
+import matplotlib.pyplot as plt
 
 try:
-    from mspp_app.logic import DataProcessor, PlotGenerator
+    from .logic import DataProcessor, PlotGenerator
 except ImportError:
-    from logic import DataProcessor, PlotGenerator
+    from programs.mspp_app.logic import DataProcessor, PlotGenerator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 ctk.set_appearance_mode("Dark")
@@ -29,16 +30,16 @@ class MSPPDesktopApp(ctk.CTk):
         # Initialize core logic
         self.processor = DataProcessor()
         self.plotter = PlotGenerator(self.processor)
-        
+
         # Application State
         self.file_paths = []
         self.current_data = None
-        
+
         # UI/Plotting state
         self.current_canvas = None
         self.current_toolbar = None
         self.current_fig = None
-        
+
         # Thread safety lock for Matplotlib's global state machine
         self.plot_lock = threading.Lock()
 
@@ -93,17 +94,17 @@ class MSPPDesktopApp(ctk.CTk):
         self.file_paths = []
         self.current_data = None
         self.file_count_label.configure(text="0 files loaded")
-        
+
         if hasattr(self, 'export_btn'):
             self.export_btn.configure(state="disabled")
-        
+
         if self.current_canvas:
             self.current_canvas.get_tk_widget().destroy()
             self.current_canvas = None
         if self.current_toolbar:
             self.current_toolbar.destroy()
             self.current_toolbar = None
-            
+
         # Clean up matplotlib memory
         if self.current_fig:
             plt.close(self.current_fig)
@@ -195,7 +196,7 @@ class MSPPDesktopApp(ctk.CTk):
         # Clean up old matplotlib memory before rendering to avoid memory leaks
         if self.current_fig:
             plt.close(self.current_fig)
-            
+
         self.current_fig = fig
 
         # Clear existing widgets
