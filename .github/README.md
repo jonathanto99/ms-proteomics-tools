@@ -167,18 +167,19 @@ pytest tests/
 
 ## Documentation
 
-- [FA Workflow Tutorial](tutorials/FA_Workflow_Tutorial/FA_Workflow_Tutorial.qmd)
 - [Contributing Guidelines](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
+- [Security](SECURITY.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see [LICENSE](LICENSE) file.
+This project is licensed under the Apache 2.0 License - see [LICENSE](../LICENSE) file.
 
 ## Links
 
 - **GitHub:** [MSCoreLab/BYU-Core-MS-Lab](https://github.com/MSCoreLab/BYU-Core-MS-Lab)
-- **BYU MS Core Facility:** [Fritz B. Burns Cancer Research Center](https://lifesciences.byu.edu/burns-cancer-center)
+- **BYU MS Core Facility:** [Fritz B. Burns Mass Spectrometry Core Facility](https://chembio.byu.edu/ms-facilities)
+- **BYU Cancer Research Center**: [BYU Simmons Cancer Research Center](https://sccr.byu.edu)
 
 ## Recent Updates
 
@@ -188,8 +189,6 @@ This project is licensed under the Apache 2.0 License - see [LICENSE](LICENSE) f
 - Dark mode UI for all visualizations
 - Python 3.14 support
 - Simplified codebase and development setup
-
-See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
