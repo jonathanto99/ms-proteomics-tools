@@ -171,33 +171,6 @@ def install_dependencies(python_exe: str) -> bool:
         return False
 
 
-def check_nodejs() -> bool:
-    """Check if Node.js is installed."""
-    print_info("Checking Node.js...")
-
-    result = subprocess.run(["node", "--version"], capture_output=True, text=True)
-    return result.returncode == 0
-
-
-def install_frontend_deps() -> bool:
-    """Install frontend dependencies."""
-    print_action("Installing frontend dependencies...")
-
-    frontend_dir = Path("programs/mspp_web/frontend")
-    original_cwd = os.getcwd()
-
-    try:
-        os.chdir(frontend_dir)
-        success, output = run_command(
-            ["npm", "install"],
-            "Installing frontend dependencies",
-            silent=True,
-        )
-        return success
-    finally:
-        os.chdir(original_cwd)
-
-
 def print_next_steps() -> None:
     """Print next steps for the user."""
     print_header("✨ Development Environment Ready!")
@@ -212,10 +185,8 @@ def print_next_steps() -> None:
     else:
         print("  1. Activate environment: source .venv/bin/activate")
 
-    print("  2. Run data analysis: python programs/python/MSPP_data_analysis.ipynb")
-    print("  3. Run web app:")
-    print("     Terminal 1: python programs/mspp_web/backend/app.py")
-    print("     Terminal 2: cd programs/mspp_web/frontend && npm run dev")
+    print("  2. Run desktop app: python programs/mspp_app/gui_app.py")
+    print("  3. Run data analysis: python programs/MSPP_data_analysis.ipynb")
 
     print(
         f"\n{TerminalColors.CYAN}See CONTRIBUTING.md for development guidelines{TerminalColors.RESET}\n"
@@ -252,25 +223,6 @@ def main() -> int:
     print()
     if not install_dependencies(python_exe):
         return 1
-
-    # Check for Node.js and install frontend deps
-    print()
-    if check_nodejs():
-        node_version = subprocess.run(
-            ["node", "--version"], capture_output=True, text=True
-        ).stdout.strip()
-        print_success(f"Node.js {node_version} detected")
-
-        print()
-        if install_frontend_deps():
-            print_success("Frontend dependencies installed")
-        else:
-            print_warning("Failed to install frontend dependencies")
-    else:
-        print_warning(
-            "Node.js not found. Web app frontend will not be available.\n"
-            "          Install from: https://nodejs.org/"
-        )
 
     # Print next steps
     print_next_steps()

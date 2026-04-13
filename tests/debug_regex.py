@@ -57,6 +57,13 @@ for suffix, pair in strict_pairs_dict.items():
     else:
         singlets.extend(pair.values())
 
+filename = "report.pg_matrix_57351_E25_20_2_350960_800.tsv"
+loaded_stem = Path(filename).stem
+print(f"Loaded Stem: '{loaded_stem}'")
+
+double_stem = Path(loaded_stem).stem
+print(f"Double Stem: '{double_stem}'")
+
 print("\nResults:")
 print(f"Strict Pairs Found: {len(strict_pairs)}")
 print(f"Singlets Found: {len(singlets)}")

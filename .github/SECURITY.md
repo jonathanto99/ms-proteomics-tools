@@ -40,19 +40,19 @@ Please include the following details in your report:
 ### Example Report
 
 ```
-Subject: [SECURITY] Vulnerability Report - Flask Backend
+Subject: [SECURITY] Vulnerability Report - Data Processing
 
-Vulnerability: SQL Injection in user input handling
+Vulnerability: Path traversal in file loading
 Affected Version: 0.2.1, 0.2.2
 Severity: High
 
 Description:
-The file upload handler in app.py does not properly sanitize filenames, 
+The data file loader in gui_app.py does not properly validate file paths, 
 allowing potential path traversal attacks...
 
 Steps to Reproduce:
-1. Upload a file with name: "../../../sensitive/file.txt"
-2. Observe that the file is saved outside the intended directory...
+1. Load a file with path: "../../../sensitive/file.txt"
+2. Observe that the application reads files outside the intended directory...
 
 Impact:
 An attacker could read/write arbitrary files on the server.
@@ -100,10 +100,10 @@ We aim to respond to all security reports within the following timeframes:
 - Critical CVEs in dependencies
 - Known exploitable package versions
 
-✅ **API Security**
-- Broken access control
-- Rate limiting bypass
-- CSRF/CORS bypass
+✅ **Application Security**
+- Data integrity issues
+- File handling vulnerabilities
+- Input validation bypass
 
 ### Out of Scope (Report as Regular Issues)
 
@@ -146,10 +146,9 @@ We follow responsible disclosure practices:
 - Monitor the changelog for security-related patches
 
 ### Deployment
-- Never run the web app with `debug=True` in production
-- Use environment variables for sensitive configuration (API keys, database URLs)
-- Run the application behind a reverse proxy (nginx/Apache) with HTTPS
-- Keep Node.js and Python dependencies up to date
+- Use environment variables for sensitive configuration
+- Keep Python dependencies up to date
+- Run the application with appropriate file permissions
 
 ### Data Handling
 - Validate all input files before processing
@@ -163,35 +162,34 @@ We maintain dependency security through:
 
 - **Automated Updates:** Dependabot monitors all package versions
 - **Vulnerability Scans:** CodeQL security analysis on every commit
-- **Audit Tools:** Regular `pip audit` and `npm audit` checks
+- **Audit Tools:** Regular `pip audit` checks
 - **Changelog Monitoring:** Track security updates in major dependencies
 
 **Current Dependencies Include:**
-- Python: numpy, pandas, matplotlib, Flask, scipy
-- Node.js: React, TypeScript, Vite
-- Additional: pyteomics, pillow, ruff, pytest
+- Python: numpy, pandas, matplotlib, customtkinter, scipy, pyteomics, pillow
+- Development: ruff, pytest, mypy
 
 View the full list in [pyproject.toml](../pyproject.toml).
 
-## Security Headers & Best Practices
+## Application Security
 
-The web application implements:
+The desktop application implements:
 
-✅ **Flask Configuration**
-- Secret key for session management
-- CORS restrictions (configurable for your environment)
-- Content Security Policy headers
+✅ **File Handling**
+- Input validation on file loads and data parsing
+- Safe temporary file handling
+- Restricted file access permissions
 
-✅ **Frontend Security**
-- TypeScript strict mode (prevents type-based attacks)
-- Input validation on file uploads
-- XSS prevention through React's auto-escaping
+✅ **Data Processing**
+- No external network communication during analysis
+- Local data processing with pandas/numpy
+- Secure memory handling for sensitive data
 
-⚠️ **Production Deployment Notes**
-- Enable HTTPS/SSL (recommended: Let's Encrypt)
-- Use environment variables for configuration
-- Implement rate limiting for API endpoints
-- Configure appropriate file upload size limits
+⚠️ **Best Practices**
+- Regularly update Python dependencies
+- Use the latest Python 3.10+ versions
+- Run analysis on trusted network environments
+- Store sensitive results with appropriate file permissions
 
 ## Security Contacts
 

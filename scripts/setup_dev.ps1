@@ -43,25 +43,6 @@ Write-Host "📥 Installing Python dependencies..." -ForegroundColor Yellow
 pip install -e ".[dev]" --quiet
 Write-Host "✅ Python dependencies installed" -ForegroundColor Green
 
-# Check if Node.js is installed
-Write-Host ""
-Write-Host "📋 Checking Node.js..." -ForegroundColor Yellow
-$nodeVersion = node --version 2>&1
-if ($nodeVersion -match "v\d+\.\d+\.\d+") {
-    Write-Host "✅ Node.js $nodeVersion detected" -ForegroundColor Green
-    
-    # Install frontend dependencies
-    Write-Host ""
-    Write-Host "📥 Installing frontend dependencies..." -ForegroundColor Yellow
-    Push-Location programs\mspp_web\frontend
-    npm install --silent
-    Write-Host "✅ Frontend dependencies installed" -ForegroundColor Green
-    Pop-Location
-} else {
-    Write-Host "⚠️  Node.js not found. Web app frontend will not be available." -ForegroundColor Yellow
-    Write-Host "   Install from: https://nodejs.org/" -ForegroundColor Yellow
-}
-
 # Summary
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
@@ -70,9 +51,8 @@ Write-Host "=================================================" -ForegroundColor 
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "  1. Activate environment: .\.venv\Scripts\Activate.ps1" -ForegroundColor White
-Write-Host "  2. Run data analysis: python programs\python\MSPP_data_analysis.ipynb" -ForegroundColor White
-Write-Host "  3. Run web app: python programs\mspp_web\backend\app.py" -ForegroundColor White
-Write-Host "     (in another terminal: cd programs\mspp_web\frontend && npm run dev)" -ForegroundColor White
+Write-Host "  2. Run desktop app: python programs\mspp_app\gui_app.py" -ForegroundColor White
+Write-Host "  3. Run data analysis: python programs\MSPP_data_analysis.ipynb" -ForegroundColor White
 Write-Host ""
 Write-Host "See CONTRIBUTING.md for development guidelines" -ForegroundColor Cyan
 Write-Host ""

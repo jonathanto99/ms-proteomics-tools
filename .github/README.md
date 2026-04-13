@@ -14,7 +14,6 @@ This repository contains workflows and tools for bottom-up proteomics analysis, 
 
 ### Prerequisites
 - Python 3.10+ ([Download](https://www.python.org/downloads/)) - 3.14+ recommended
-- Node.js 18+ ([Download](https://nodejs.org/)) - only for web app
 
 ### Installation
 
@@ -34,42 +33,30 @@ pip install -e ".[dev]"                   # With dev tools (Ruff, pytest)
 # Or for Jupyter notebook support:
 pip install -e ".[dev,jupyter]"
 
-# 3. (Optional) Install web app frontend
-cd programs/mspp_web/frontend
-npm install
 ```
 
 ## Launch the App
 
 ### Quick Start (Easiest Method)
 
-After setup, launch the web app using one of these methods:
+After setup, launch the MSPP Desktop App using one of these methods:
 
 **Windows:**
-- **Development:** Double-click `scripts/launch/Launch_MSPP_App.bat`
-- **Production:** Double-click `scripts/launch/Launch_MSPP_App_Prod.bat`
+- Double-click `scripts/launch/Launch_MSPP_App.bat` (or the appropriate launcher)
 
 **macOS/Linux:**
 ```bash
-# Development mode (with debugging)
 chmod +x scripts/launch/Launch_MSPP_App.sh
-chmod +x scripts/launch/Launch_MSPP_App_Prod.sh
 ./scripts/launch/Launch_MSPP_App.sh
-
-# Production mode (optimized)
-./scripts/launch/Launch_MSPP_App_Prod.sh
 ```
 
 **Any Platform (Python):**
 ```bash
-# Development mode (default)
-python scripts/launch/launcher.py
-
-# Production mode
-python scripts/launch/launcher.py --prod
+# Launch desktop app
+python programs/mspp_app/gui_app.py
 ```
 
-The launchers automatically find your Python environment and open the app at `http://localhost:5000`.
+The app will open as a desktop window for analyzing proteomics data.
 
 ### Manual Launch
 
@@ -81,12 +68,8 @@ source .venv/bin/activate  # macOS/Linux
 # or
 .\.venv\Scripts\Activate.ps1  # Windows PowerShell
 
-# Run the Flask backend
-flask --app programs.mspp_web.backend.app run
-
-# In another terminal, run the frontend dev server (optional)
-cd programs/mspp_web/frontend
-npm run dev
+# Run the desktop application
+python programs/mspp_app/gui_app.py
 ```
 
 ## Platform Support
@@ -98,32 +81,17 @@ This project is **fully cross-platform** and works on Windows, macOS, and Linux.
 - ✅ Desktop launchers: .bat (Windows), .sh (macOS/Linux), and Python (all platforms)
 - ✅ Path handling: Uses `pathlib.Path` for automatic platform-specific path resolution
 - ✅ Line endings: Normalized via `.gitattributes` for consistent development across OS
-- ✅ Environment variables: Configure ports, CORS origins, and temp directories
 - ✅ Provisional: All dependencies tested on Python 3.10, 3.11, 3.12, 3.13, 3.14
 
-**Configuration:**
-Set environment variables to customize behavior (all optional):
-```bash
-# Backend
-FLASK_HOST=127.0.0.1           # Default: localhost
-FLASK_PORT=5000                # Default: 5000
-FLASK_ENV=development          # Enable debug mode
-CORS_ORIGINS=http://localhost:3000,http://localhost:5000
-
-# Frontend
-VITE_PORT=3000                 # Default: 3000
-VITE_API_PROXY=http://localhost:5000  # API proxy target
-```
-
-See [.env.example](.env.example) for all options and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup and [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues.
 
 ## Tools
 
-### MSPP Data Plotter (Web App)
-Modern web-based interface for proteomics data visualization.
+### MSPP Desktop App
+Desktop application for proteomics data visualization and analysis.
 
 **Features:**
-- Drag-and-drop TSV file upload
+- File browser for TSV data loading
 - Protein ID bar charts
 - E.coli vs Yeast fold change analysis
 - Organisms vs HeLa spike-in validation
@@ -132,11 +100,11 @@ Modern web-based interface for proteomics data visualization.
 
 **Run:**
 ```powershell
-python programs/mspp_web/launch_app.py
+python programs/mspp_app/gui_app.py
 ```
 
-### Python Tools
-Additional analysis and data processing tools available in the `programs/python/` directory.
+### Additional Python Tools
+Other analysis and data processing tools available in the `programs/` directory.
 
 **Available Tools:**
 - `filter_fasta_gui.py` - GUI tool for filtering FASTA files by organism patterns
@@ -145,10 +113,10 @@ Additional analysis and data processing tools available in the `programs/python/
 **Run:**
 ```powershell
 # FASTA Filter GUI
-python programs/python/filter_fasta_gui.py
+python programs/filter_fasta_gui.py
 
 # Launch Jupyter notebook
-jupyter notebook programs/python/MSPP_data_analysis.ipynb
+jupyter notebook programs/MSPP_data_analysis.ipynb
 ```
 
 ## Repository Structure
@@ -156,8 +124,8 @@ jupyter notebook programs/python/MSPP_data_analysis.ipynb
 ```
 BYU-Core-MS-Lab/
 ├── programs/              # Analysis tools
-│   ├── mspp_web/         # Web application (Flask backend + React frontend)
-│   └── python/           # Python tools and scripts
+│   ├── mspp_app/         # MSPP Desktop Application (CustomTkinter)
+│   └── Other tools       # Filter FASTA, notebooks, and utilities
 ├── tutorials/            # Workflow tutorials
 ├── documentations/       # Documentation and reference materials
 ├── scripts/              # Development and setup scripts
@@ -169,7 +137,7 @@ BYU-Core-MS-Lab/
 ## Typical Workflow
 
 1. **Prepare Data:** Export protein groups from DIA-NN as TSV
-2. **Upload Files:** Use web app or desktop GUI
+2. **Load Files:** Use the desktop app file browser
 3. **Analyze:**
    - Check protein ID counts by organism
    - Validate spike-in ratios (E.coli vs Yeast)
@@ -180,10 +148,8 @@ BYU-Core-MS-Lab/
 
 Encountered an issue? Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common problems and solutions:
 - Python not found or broken installation
-- Port already in use
 - Missing dependencies
 - Virtual environment issues
-- CORS errors
 - And more...
 
 ## Contributing
@@ -202,7 +168,6 @@ pytest tests/
 ## Documentation
 
 - [FA Workflow Tutorial](tutorials/FA_Workflow_Tutorial/FA_Workflow_Tutorial.qmd)
-- [Web App README](programs/mspp_web/README.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
 
@@ -217,12 +182,12 @@ This project is licensed under the Apache 2.0 License - see [LICENSE](LICENSE) f
 
 ## Recent Updates
 
-- Web application with React + TypeScript frontend
-- Performance optimizations (5-10x faster on cached data)
+- CustomTkinter desktop application for cross-platform compatibility
+- Performance optimizations via cached data processing
 - Grouped fold change analysis with pattern matching
 - Dark mode UI for all visualizations
 - Python 3.14 support
-- Enhanced documentation and development setup
+- Simplified codebase and development setup
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.
 
