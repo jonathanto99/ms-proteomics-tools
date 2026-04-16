@@ -1,6 +1,6 @@
 """
 MSPP logic.py - Data Processing and Plot Generation
-Contains the core analytical algorithms and visualization logic."
+Contains the core analytical algorithms and visualization logic.
 """
 
 import base64
