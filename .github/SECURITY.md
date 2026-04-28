@@ -126,12 +126,12 @@ We aim to respond to all security reports within the following timeframes:
 
 We follow responsible disclosure practices:
 
-1. **Report received** → We acknowledge receipt within 48 hours
-2. **Verification** → We confirm the vulnerability and assess impact
-3. **Fix development** → We create and test a patch (1-4 weeks typical)
-4. **Embargo period** → Fix is prepared but not yet released
-5. **Release coordination** → We coordinate a public disclosure date (typically 2 weeks after patch release)
-6. **Publication** → Fix is released and vulnerability details are disclosed publicly
+1. **Report received** -> We acknowledge receipt within 48 hours
+2. **Verification** -> We confirm the vulnerability and assess impact
+3. **Fix development** -> We create and test a patch (1-4 weeks typical)
+4. **Embargo period** -> Fix is prepared but not yet released
+5. **Release coordination** -> We coordinate a public disclosure date (typically 2 weeks after patch release)
+6. **Publication** -> Fix is released and vulnerability details are disclosed publicly
 
 **Embargo Terms:**
 - Standard embargo: 90 days after patch release

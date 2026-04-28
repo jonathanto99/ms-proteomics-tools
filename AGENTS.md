@@ -5,7 +5,7 @@ Goal: Onboard AI coding agents to be immediately productive in this repository.
 ## 1. Big picture
 - **Backend:** Flask app at `programs/mspp_web/backend/app.py` — REST API that ingests DIA‑NN TSVs, uses pandas/numpy and matplotlib (Agg) to return base64 images or binary PNG/ZIP.
 - **Frontend:** React + TypeScript in `programs/mspp_web/frontend/` (Vite). Dev server: :5173; backend: :5000.
-- **Data flow:** frontend uploads TSVs → `POST /api/upload` → backend caches parsed DataFrames → `/api/plot/*` or `/api/export/*` generate figures.
+- **Data flow:** frontend uploads TSVs -> `POST /api/upload` -> backend caches parsed DataFrames -> `/api/plot/*` or `/api/export/*` generate figures.
 - **Other Tools:** Standalone GUI tools and notebooks live in `programs/python/`.
 
 ## 2. Agent Behavior & Rules of Engagement
@@ -19,7 +19,7 @@ Goal: Onboard AI coding agents to be immediately productive in this repository.
 ## 3. Key implementation patterns (inspect these files)
 - **Data parsing & caching:** look in `programs/mspp_web/backend` for DataProcessor — consensus protein logic (require presence in E25 & E100) is central.
 - **Plot generation:** PlotGenerator exposes `_create_*_figure()` helpers and `_fig_to_base64()`; always close figures to avoid memory leaks.
-- **Organism detection:** simple string heuristics (`sp\|` → HeLa, `ECOLI` → E.coli, `YEAST` → Yeast). Update DataProcessor when adding species.
+- **Organism detection:** simple string heuristics (`sp\|` -> HeLa, `ECOLI` -> E.coli, `YEAST` -> Yeast). Update DataProcessor when adding species.
 
 ## 4. Developer workflows & Scripts
 - **Setup:** Prefer using `python scripts/setup/setup_dev.py` or platform-specific `.sh`/`.ps1` scripts to instantiate the environment. `pixi` is also supported (`pixi run start`).
