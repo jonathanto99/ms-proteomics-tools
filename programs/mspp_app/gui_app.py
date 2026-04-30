@@ -12,13 +12,16 @@ import customtkinter as ctk
 import matplotlib.pyplot as plt
 
 try:
-    from .logic import DataProcessor, PlotGenerator
+    from .logic import DataProcessor
+    from .plot import PlotGenerator
 except ImportError:
-    from programs.mspp_app.logic import DataProcessor, PlotGenerator
+    from programs.mspp_app.logic import DataProcessor
+    from programs.mspp_app.plot import PlotGenerator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
+
 
 class MSPPDesktopApp(ctk.CTk):
     def __init__(self):
