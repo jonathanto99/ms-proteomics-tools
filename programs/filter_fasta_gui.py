@@ -67,7 +67,7 @@ class FastaEntry:
     sequence_lines: list[str]
 
     @property
-    def header_text(self) -> str:
+    def header_text(self):
         """Return header without leading '>'.
 
         Returns:
@@ -76,7 +76,7 @@ class FastaEntry:
         return self.header.lstrip(">")
 
     @cached_property
-    def sequence(self) -> str:
+    def sequence(self):
         """Return joined sequence.
 
         Returns:
@@ -85,7 +85,7 @@ class FastaEntry:
         return "".join(self.sequence_lines)
 
     @cached_property
-    def sequence_hash(self) -> str:
+    def sequence_hash(self):
         """Return MD5 hash of sequence for deduplication.
 
         Returns:
@@ -123,7 +123,7 @@ class FastaReader:
     """
 
     def __init__(self, file_path: Path):
-        """Initialize reader with file path.
+        """Initialize reader with filepath.
 
         Args:
             file_path: Path object pointing to FASTA file
@@ -167,7 +167,7 @@ class PatternMatcher(ABC):
     """Abstract base class for pattern matching strategies."""
 
     @abstractmethod
-    def matches(self, text: str) -> bool:
+    def matches(self, text: str):
         """Check if text matches any pattern."""
         pass
 
@@ -190,7 +190,7 @@ class SubstringMatcher(PatternMatcher):
         self.patterns = patterns if case_sensitive else [p.lower() for p in patterns]
         self.case_sensitive = case_sensitive
 
-    def matches(self, text: str) -> bool:
+    def matches(self, text: str):
         """Check if text contains any pattern.
 
         Args:
@@ -228,7 +228,7 @@ class RegexMatcher(PatternMatcher):
             # ! Provide user-friendly error message for invalid regex
             raise ValueError(f"Invalid regular expression: {e}") from e
 
-    def matches(self, text: str) -> bool:
+    def matches(self, text: str):
         """Check if text matches any regex pattern.
 
         Args:
@@ -343,7 +343,7 @@ class DeduplicationStrategy(ABC):
     """Abstract base class for deduplication strategies."""
 
     @abstractmethod
-    def is_duplicate(self, entry: FastaEntry) -> bool:
+    def is_duplicate(self, entry: FastaEntry):
         """Check if entry is a duplicate."""
         pass
 
@@ -355,7 +355,7 @@ class NoDuplication(DeduplicationStrategy):
     Used when user doesn't want any deduplication.
     """
 
-    def is_duplicate(self, entry: FastaEntry) -> bool:
+    def is_duplicate(self, entry: FastaEntry):
         """Always returns False (never considers entries as duplicates).
 
         Args:
@@ -384,7 +384,7 @@ class KeyedDeduplication(DeduplicationStrategy):
         self.key_func = key_func
         self.seen_keys: set[str] = set()
 
-    def is_duplicate(self, entry: FastaEntry) -> bool:
+    def is_duplicate(self, entry: FastaEntry):
         """Check if entry's key was seen before.
 
         Args:
@@ -439,7 +439,7 @@ class FastaMerger:
 
         return stats
 
-    def _process_file(self, input_path: Path, output_handle, stats: MergeStats) -> tuple[int, int]:
+    def _process_file(self, input_path: Path, output_handle, stats: MergeStats):
         """Process a single file during merge.
 
         Args:
@@ -678,7 +678,7 @@ if GUI_AVAILABLE:
             """Open file dialog to select input FASTA file.
 
             Side Effects:
-                - Sets input_var to selected file path
+                - Sets input_var to selected filepath
                 - Auto-suggests output filename if not already set
             """
             path = filedialog.askopenfilename(
@@ -752,7 +752,7 @@ if GUI_AVAILABLE:
             if path:
                 self.merge_output_var.set(path)
 
-        def _parse_patterns(self, patterns_str: str) -> list[str]:
+        def _parse_patterns(self, patterns_str: str):
             """Parse comma-separated patterns and validate."""
             patterns = [p.strip() for p in patterns_str.split(",") if p.strip()]
             if not patterns:
@@ -770,7 +770,7 @@ if GUI_AVAILABLE:
                 - Error dialog if validation fails or exception occurs
             """
             try:
-                # * Validate and expand file paths
+                # * Validate and expand filepaths
                 input_path = Path(self.input_var.get()).expanduser()
                 output_path = Path(self.output_var.get()).expanduser()
 
@@ -780,7 +780,7 @@ if GUI_AVAILABLE:
                     return
                 # ! Validate output path is set
                 if not output_path:
-                    messagebox.showerror("Error", "Please choose an output FASTA file path.")
+                    messagebox.showerror("Error", "Please choose an output FASTA filepath.")
                     return
 
                 # * Parse and validate patterns
@@ -828,7 +828,7 @@ if GUI_AVAILABLE:
                 # * Validate and expand output path
                 output_path = Path(self.merge_output_var.get()).expanduser()
                 if not output_path:
-                    messagebox.showerror("Error", "Please choose an output FASTA file path.")
+                    messagebox.showerror("Error", "Please choose an output FASTA filepath.")
                     return
 
                 # * Create merger and process files
