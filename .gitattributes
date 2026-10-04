@@ -58,6 +58,10 @@ pixi.lock merge=binary linguist-generated=true -diff
 # Identify Typst source
 *.typ linguist-language=Typst
 
+# Identify YAML sources
+*.yaml linguist-language=YAML
+*.yml linguist-language=YAML
+
 # Large files handled by Git LFS
 *.png filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
