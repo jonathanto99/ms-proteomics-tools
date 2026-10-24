@@ -1,0 +1,396 @@
+# These literatures outline the level of quantitative proteomics QC that we aspire to: 
+
+references:
+  - id: tsantilas2024framework
+    type: article-journal
+    author:
+      - family: Tsantilas
+        given: K. A.
+      - family: Merrihew
+        given: G. E.
+      - family: Robbins
+        given: J. E.
+      - family: Johnson
+        given: R. S.
+      - family: Park
+        given: J.
+      - family: Plubell
+        given: D. L.
+      - family: Canterbury
+        given: J. D.
+      - family: Huang
+        given: E.
+      - family: Riffle
+        given: M.
+      - family: Sharma
+        given: V.
+      - family: MacLean
+        given: B. X.
+      - family: Eckels
+        given: J.
+      - family: Wu
+        given: C. C.
+      - family: Bereman
+        given: M. S.
+      - family: Spencer
+        given: S. E.
+      - family: Hoofnagle
+        given: A. N.
+      - family: MacCoss
+        given: M. J.
+    title: A Framework for Quality Control in Quantitative Proteomics
+    container-title: Journal of Proteome Research
+    issued:
+      date-parts:
+        - [2024]
+    volume: 23
+    issue: 10
+    page: 4392-4408
+    DOI: 10.1021/acs.jproteome.4c00363
+  - id: hsiao2024fragpipe-analyst
+    type: article-journal
+    author:
+      - family: Hsiao
+        given: Y.
+      - family: Zhang
+        given: H.
+      - family: Li
+        given: G. X.
+      - family: Deng
+        given: Y.
+      - family: Yu
+        given: F.
+      - family: Valipour Kahrood
+        given: H.
+      - family: Steele
+        given: J. R.
+      - family: Schittenhelm
+        given: R. B.
+      - family: Nesvizhskii
+        given: A. I.
+    title: Analysis and Visualization of Quantitative Proteomics Data Using FragPipe-Analyst
+    container-title: Journal of Proteome Research
+    issued:
+      date-parts:
+        - [2024]
+    volume: 23
+    issue: 10
+    page: 4303-4315
+    DOI: 10.1021/acs.jproteome.4c00294
+  - id: guzman2024ultra-fast
+    type: article-journal
+    author:
+      - family: Guzman
+        given: U. H.
+      - family: Martinez-Val
+        given: A.
+      - family: Ye
+        given: Z.
+      - family: Damoc
+        given: E.
+      - family: Arrey
+        given: T. N.
+      - family: Pashkova
+        given: A.
+      - family: Renuse
+        given: S.
+      - family: Denisov
+        given: E.
+      - family: Petzoldt
+        given: J.
+      - family: Peterson
+        given: A. C.
+      - family: Harking
+        given: F.
+      - family: Østergaard
+        given: O.
+      - family: Rydbirk
+        given: R.
+      - family: Aznar
+        given: S.
+      - family: Stewart
+        given: H.
+      - family: Xuan
+        given: Y.
+      - family: Hermanson
+        given: D.
+      - family: Horning
+        given: S.
+      - family: Hock
+        given: C.
+      - family: Makarov
+        given: A.
+      - family: Zabrouskov
+        given: V.
+      - family: Olsen
+        given: J. V.
+    title: Ultra-Fast Label-Free Quantification and Comprehensive Proteome Coverage with Narrow-Window Data-Independent Acquisition
+    container-title: Nature Biotechnology
+    issued:
+      date-parts:
+        - [2024]
+    volume: 42
+    issue: 12
+    page: 1855-1866
+    DOI: 10.1038/s41587-023-02099-7
+  - id: sinha2020beginner
+    type: article-journal
+    author:
+      - family: Sinha
+        given: A.
+      - family: Mann
+        given: M.
+    title: A Beginner’s Guide to Mass Spectrometry-Based Proteomics
+    container-title: Biochemist
+    issued:
+      date-parts:
+        - [2020]
+    volume: 42
+    issue: 5
+    page: 64-69
+    DOI: 10.1042/BIO20200057
+  - id: shuken2023introduction
+    type: article-journal
+    author:
+      - family: Shuken
+        given: S. R.
+    title: An Introduction to Mass Spectrometry-Based Proteomics
+    container-title: Journal of Proteome Research
+    issued:
+      date-parts:
+        - [2023]
+    volume: 22
+    issue: 7
+    page: 2151-2171
+    DOI: 10.1021/acs.jproteome.2c00838
+  - id: petelski2022single-cell
+    type: article-journal
+    author:
+      - family: Petelski
+        given: A. A.
+      - family: Slavov
+        given: N.
+      - family: Specht
+        given: H.
+    title: Single-Cell Proteomics Preparation for Mass Spectrometry Analysis Using Freeze-Heat Lysis and an Isobaric Carrier
+    container-title: Journal of Visualized Experiments
+    issued:
+      date-parts:
+        - [2022]
+    issue: 190
+    page: 63802
+    DOI: 10.3791/63802
+  - id: karpievitch2010liquid
+    type: article-journal
+    author:
+      - family: Karpievitch
+        given: Y. V.
+      - family: Polpitiya
+        given: A. D.
+      - family: Anderson
+        given: G. A.
+      - family: Smith
+        given: R. D.
+      - family: Dabney
+        given: A. R.
+    title: Liquid Chromatography Mass Spectrometry-Based Proteomics: Biological and Technological Aspects
+    container-title: The Annals of Applied Statistics
+    issued:
+      date-parts:
+        - [2010]
+    volume: 4
+    issue: 4
+    page: 1-26
+    DOI: 10.1214/10-AOAS341
+  - id: heil2023astral
+    type: article-journal
+    author:
+      - family: Heil
+        given: L. R.
+      - family: Damoc
+        given: E.
+      - family: Arrey
+        given: T. N.
+      - family: Pashkova
+        given: A.
+      - family: Denisov
+        given: E.
+      - family: Petzoldt
+        given: J.
+      - family: Peterson
+        given: A. C.
+      - family: Hsu
+        given: C.
+      - family: Searle
+        given: B. C.
+      - family: Shulman
+        given: N.
+      - family: Riffle
+        given: M.
+      - family: Connolly
+        given: B.
+      - family: MacLean
+        given: B. X.
+      - family: Remes
+        given: P. M.
+      - family: Senko
+        given: M. W.
+      - family: Stewart
+        given: H. I.
+      - family: Hock
+        given: C.
+      - family: Makarov
+        given: A. A.
+      - family: Hermanson
+        given: D.
+      - family: Zabrouskov
+        given: V.
+      - family: Wu
+        given: C. C.
+      - family: MacCoss
+        given: M. J.
+    title: Evaluating the Performance of the Astral Mass Analyzer for Quantitative Proteomics Using Data-Independent Acquisition
+    container-title: Journal of Proteome Research
+    issued:
+      date-parts:
+        - [2023]
+    volume: 22
+    issue: 10
+    page: 3290-3300
+    DOI: 10.1021/acs.jproteome.3c00357
+  - id: eshghi2023targeted
+    type: article-journal
+    author:
+      - family: Eshghi
+        given: A.
+      - family: Xie
+        given: X.
+      - family: Hardie
+        given: D.
+      - family: Chen
+        given: M. X.
+      - family: Izaguirre
+        given: F.
+      - family: Newman
+        given: R.
+      - family: Zhu
+        given: Y.
+      - family: Kelly
+        given: R. T.
+      - family: Goodlett
+        given: D. R.
+    title: Sample Preparation Methods for Targeted Single-Cell Proteomics
+    container-title: Journal of Proteome Research
+    issued:
+      date-parts:
+        - [2023]
+    volume: 22
+    issue: 6
+    page: 1589-1602
+    DOI: 10.1021/acs.jproteome.2c00429
+  - id: cui2022high-throughput
+    type: article-journal
+    author:
+      - family: Cui
+        given: M.
+      - family: Cheng
+        given: C.
+      - family: Zhang
+        given: L.
+    title: 'High-Throughput Proteomics: A Methodological Mini-Review'
+    container-title: Laboratory Investigation
+    issued:
+      date-parts:
+        - [2022]
+    volume: 102
+    issue: 11
+    page: 1170-1181
+    DOI: 10.1038/s41374-022-00830-7
+  - id: bader2023proteomics
+    type: article-journal
+    author:
+      - family: Bader
+        given: J. M.
+      - family: Deigendesch
+        given: N.
+      - family: Misch
+        given: M.
+      - family: Mann
+        given: M.
+      - family: Koch
+        given: A.
+      - family: Meissner
+        given: F.
+    title: Proteomics Separates Adult-Type Diffuse High-Grade Gliomas in Metabolic Subgroups Independent of 1p/19q Codeletion and across IDH Mutational Status
+    container-title: Cell Reports Medicine
+    issued:
+      date-parts:
+        - [2023]
+    volume: 4
+    issue: 1
+    article-number: 100877
+    DOI: 10.1016/j.xcrm.2022.100877
+  - id: albrecht2024bridging
+    type: article-journal
+    author:
+      - family: Albrecht
+        given: V.
+      - family: Müller-Reif
+        given: J.
+      - family: Nordmann
+        given: T. M.
+      - family: Mund
+        given: A.
+      - family: Schweizer
+        given: L.
+      - family: Geyer
+        given: P. E.
+      - family: Niu
+        given: L.
+      - family: Wang
+        given: J.
+      - family: Post
+        given: F.
+      - family: Oeller
+        given: M.
+      - family: Metousis
+        given: A.
+      - family: Bach Nielsen
+        given: A.
+      - family: Steger
+        given: M.
+      - family: Wewer Albrechtsen
+        given: N. J.
+      - family: Mann
+        given: M.
+    title: 'Bridging the Gap from Proteomics Technology to Clinical Application: Highlights from the 68th Benzon Foundation Symposium'
+    container-title: Molecular & Cellular Proteomics
+    issued:
+      date-parts:
+        - [2024]
+    volume: 23
+    issue: 12
+    article-number: 100877
+    DOI: 10.1016/j.mcpro.2024.100877
+  - id: alamrani2021concepts
+    type: article-journal
+    author:
+      - family: Al-Amrani
+        given: S.
+      - family: Al-Jabri
+        given: Z.
+      - family: Al-Zaabi
+        given: A.
+      - family: Alshekaili
+        given: J.
+      - family: Al-Khabori
+        given: M.
+    title: Proteomics: Concepts and Applications in Human Medicine
+    container-title: World Journal of Biological Chemistry
+    issued:
+      date-parts:
+        - [2021]
+    volume: 12
+    issue: 5
+    page: 57-69
+    DOI: 10.4331/wjbc.v12.i5.57
