@@ -8,6 +8,28 @@ scanpy = "*"
 pywebview = "*"
 customtkinter = "*"
 
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ms-proteomics-tools"
+version = "0.1.0"
+description = "Mass Spectrometry QC and analysis tools for BYU Fritz B. Burns Cancer Research Center MS Core Facility"
+readme = "README.md"
+requires-python = ">=3.14"
+license = {text = "MIT"}
+authors = [
+  {name = "Jonathan To", email = "toshuyi@outlook.com"},
+]
+keywords = ["mass-spectrometry", "proteomics", "data-analysis", "visualization"]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bioinformatics",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+
 [environments.default.dependencies]
 python = ">=3.14,<3.15"
 # Core scientific stack
